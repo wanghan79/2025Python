@@ -2,12 +2,7 @@
 import random
 import string
 from functools import wraps
-#from date import *
-
-SUM = "SUM"
-AVG = "AVG"
-MAX = "MAX"
-MIN = "MIN"
+from date import *
 
 def _flatten(items):
     for item in items:
