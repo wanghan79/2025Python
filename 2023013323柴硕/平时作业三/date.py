@@ -1,0 +1,4 @@
+SUM = "SUM"
+AVG = "AVG"
+MAX = "MAX"
+MIN = "MIN"
