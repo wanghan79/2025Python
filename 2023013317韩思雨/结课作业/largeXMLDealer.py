@@ -91,7 +91,7 @@ if __name__ == "__main__":
             print(f"Accession: {acc}")
         print(f"共找到 {len(accessions)} 个accession号码")
 """
-终端运行示例
+终端命令行运行示例
 python largeXMLDealer.py P00
 734.xml --components
 [开始解析组件信息]
