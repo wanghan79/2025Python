@@ -1,4 +1,7 @@
-
+"""
+@Author: 刘鑫硕
+@File: 银行家算法
+"""
 def print_matrix(title: str, matrix: list, processes: int, resources: int) -> None:
     """打印矩阵信息（最大需求/分配/需求矩阵）"""
     print(f"\n{title}")
