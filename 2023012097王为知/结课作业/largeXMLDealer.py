@@ -1,7 +1,7 @@
 """
 @Author: Weizhi Wang
 @Date: 2025-06-03
-@Description: 银行家算法模块实现资源分配和安全性检查，避免死锁
+@Description: Python 解析大型 XML 文件
 """
 
 from lxml import etree
