@@ -1,0 +1,55 @@
+import random
+import string
+data_count=int(input('请输入生成数量：'))
+data_type = input('请输入生成数据类型：').lower()
+data_dic = {}
+s = int(input('请输入数值起始范围:'))
+data_dic['start'] = s
+e = int(input('请输入数值结束范围:'))
+data_dic['end'] = e
+def random_data(data_count,data_type,**kwargs):
+    if data_type == 'int':
+        s = kwargs['start']
+        e = kwargs['end']
+        for _ in range(data_count):
+            i = random.randint(s,e)
+            yield i
+    elif data_type in ['float','double']:
+        s = kwargs['start']
+        e = kwargs['end']
+        if data_type == 'float':
+            length = 3
+        else:
+            length = 6
+        for _ in range(data_count):
+            i = random.uniform(s,e)
+            yield round(i,length)
+    elif data_type == 'str':
+        s = kwargs['start']
+        e = kwargs['end']
+        for _ in range(data_count):
+            length = random.randint(s, e)
+            random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+            yield random_string
+if data_type in ['int','double','float','str']:
+    data_generator = random_data(data_count, data_type, **data_dic)
+    for i in data_generator:
+        print(i)
+elif data_type in ['list','set','tuple']:
+    data_generator = random_data(data_count, 'double', **data_dic)
+    if data_type == 'list':
+        li = list(data_generator)
+        print(li)
+    elif data_type == 'tuple':
+        li = tuple(data_generator)
+        print(li)
+    else:
+        li = set(data_generator)
+        print(li)
+elif data_type == 'dict':
+    data_generator1 = random_data(data_count, 'str', **data_dic)
+    data_generator2 = random_data(data_count, 'double', **data_dic)
+    li1 = list(data_generator1)
+    li2 = list(data_generator2)
+    li = dict(zip(li1,li2))
+    print(li)
