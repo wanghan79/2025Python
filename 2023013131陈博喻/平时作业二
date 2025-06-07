@@ -1,0 +1,58 @@
+import random
+import string
+data_count=int(input('请输入生成数量：'))
+data_type = input('请输入生成数据类型：').lower()
+data_dic = {}
+s = int(input('请输入数值起始范围:'))
+data_dic['start'] = s
+e = int(input('请输入数值结束范围:'))
+data_dic['end'] = e
+def random_data(data_count,data_type,**kwargs):
+    s = kwargs['start']
+    e = kwargs['end']
+    if data_type == 'int':
+        for _ in range(data_count):
+            i = random.randint(s,e)
+            yield i
+    elif data_type == 'float':
+        for _ in range(data_count):
+            i = random.uniform(s,e)
+            yield round(i,3)
+    elif data_type == 'double':
+        for _ in range(data_count):
+            i = random.uniform(s,e)
+            yield round(i,6)
+    elif data_type == 'str':
+        for _ in range(data_count):
+            length = random.randint(s, e)
+            random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+            yield random_string
+    elif data_type == 'list':
+        li = []
+        for _ in range(data_count):
+            i = random.uniform(s,e)
+            li.append(round(i,3))
+        yield li
+    elif data_type == 'tuple':
+        li = []
+        for _ in range(data_count):
+            i = random.uniform(s, e)
+            li.append(round(i, 3))
+        yield tuple(li)
+    elif data_type == 'set':
+        li = []
+        for _ in range(data_count):
+            i = random.uniform(s, e)
+            li.append(round(i, 3))
+        yield set(li)
+    else:
+        di = {}
+        for _ in range(data_count):
+            i = round(random.uniform(s, e), 3)
+            length = random.randint(s, e)
+            j = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+            di[j] = i
+        yield di
+data_generator = random_data(data_count,data_type,**data_dic)
+for i in data_generator:
+    print(i)
