@@ -1,0 +1,96 @@
+import random
+import string
+
+data_count=int(input('请输入生成数量：'))
+data_type = input('请输入生成数据类型：').lower()
+kwargs = {}
+s = int(input('请输入数值起始范围:'))
+kwargs['start'] = s
+e = int(input('请输入数值结束范围:'))
+kwargs['end'] = e
+gen = []
+def random_data_generator_decorator(data_count,data_type,**kwargs):
+    def decorator(func):
+        def wrapper():
+            def random_data(data_count,data_type,**kwargs):
+                s = kwargs['start']
+                e = kwargs['end']
+                li = []
+                if data_type == 'int':
+                    for _ in range(data_count):
+                        i = random.randint(s,e)
+                        yield i
+                elif data_type == 'float':
+                    for _ in range(data_count):
+                        i = random.uniform(s,e)
+                        li.append(round(i,3))
+                        yield round(i,3)
+                elif data_type == 'double':
+                    for _ in range(data_count):
+                        i = random.uniform(s,e)
+                        yield round(i,6)
+                elif data_type == 'str':
+                    for _ in range(data_count):
+                        length = random.randint(s, e)
+                        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+                        yield random_string
+                elif data_type == 'list':
+                    for _ in range(data_count):
+                        i = random.uniform(s,e)
+                        li.append(round(i,3))
+                    yield li
+                elif data_type == 'tuple':
+                    for _ in range(data_count):
+                        i = random.uniform(s, e)
+                        li.append(round(i, 3))
+                    yield tuple(li)
+                elif data_type == 'set':
+                    for _ in range(data_count):
+                        i = random.uniform(s, e)
+                        li.append(round(i, 3))
+                    yield set(li)
+                else:
+                    di = {}
+                    for _ in range(data_count):
+                        i = round(random.uniform(s, e), 3)
+                        length = random.randint(s, e)
+                        j = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+                        di[j] = i
+                    yield di
+            global gen
+            gen = list(random_data(data_count,data_type,**kwargs))
+            for i in gen:
+                print(i)
+            return func()
+        return wrapper
+    return decorator
+
+
+@random_data_generator_decorator(data_count, data_type, **kwargs)
+def calculate_total():
+    SUM = 0
+    MAX = 0
+    MIN = 10 ^ 9
+    try:
+        if data_type in ['int','double','float']:
+            for i in gen:
+                SUM += i
+                MAX = max(MAX,SUM)
+                MIN = min(MIN,SUM)
+        elif data_type in ['list','tuple','set']:
+            for i in gen[0]:
+                SUM += i
+                MAX = max(MAX,SUM)
+                MIN = min(MIN,SUM)
+        else:
+            for i in gen[0].values():
+                SUM += i
+                MAX = max(MAX,SUM)
+                MIN = min(MIN,SUM)
+    except Exception as e:
+        print('str型不能统计数值')
+    AVGRAGE = round(SUM / data_count, 3)
+    print(f'SUM = {SUM}, MAX = {MAX}, MIN = {MIN}, AVGRAGE = {AVGRAGE}')
+
+calculate_total()
+
