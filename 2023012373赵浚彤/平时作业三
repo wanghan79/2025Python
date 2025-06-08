@@ -1,1 +1,146 @@
+"""
+2023012373赵浚彤
+2025春季学期python
+平时作业3
+"""
+import random
+import string
+from typing import Dict, Any, Union, List, Tuple, Callable
+from functools import wraps
 
+
+def stats_decorator(operations: List[str]):
+    """
+    带参数的装饰器，用于统计随机样本生成函数的输出结果
+
+    参数:
+        operations: 统计操作列表，可选'sum', 'avg', 'max', 'min'
+    """
+
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 调用原函数获取生成器
+            generator = func(*args, **kwargs)
+
+            # 遍历生成器的所有结果
+            all_results = []
+            for result in generator:
+                all_results.append(result)
+                yield result  # 保持生成器特性，继续yield结果
+
+            # 如果没有结果，直接返回
+            if not all_results:
+                return
+
+            # 展平所有结果以便统计
+            flat_values = []
+            for res in all_results:
+                # 递归展平嵌套结构
+                def flatten(item):
+                    if isinstance(item, (int, float)):
+                        return [item]
+                    elif isinstance(item, (list, tuple)):
+                        return [x for sub in item for x in flatten(sub)]
+                    elif isinstance(item, dict):
+                        return [x for val in item.values() for x in flatten(val)]
+                    return []
+
+                flat_values.extend(flatten(res))
+
+            # 过滤出数字类型(整数和浮点数)
+            numbers = [x for x in flat_values if isinstance(x, (int, float))]
+
+            # 如果没有数字，跳过统计
+            if not numbers:
+                print("没有找到可统计的数字数据")
+                return
+
+            # 执行统计操作
+            print("\n统计结果:")
+            if 'sum' in operations:
+                print(f"总和(sum): {sum(numbers)}")
+            if 'avg' in operations:
+                print(f"平均值(avg): {sum(numbers) / len(numbers):.2f}")
+            if 'max' in operations:
+                print(f"最大值(max): {max(numbers)}")
+            if 'min' in operations:
+                print(f"最小值(min): {min(numbers)}")
+
+        return wrapper
+
+    return decorator
+
+
+@stats_decorator(operations=['sum', 'avg', 'max', 'min'])
+def data_generator(kwargs: Dict[Any, Any]) -> Union[Tuple, List[Tuple]]:
+    """
+    使用生成器生成随机样本
+
+    参数:
+        kwargs: 包含生成规则的字典，必须包含'num'键指定生成数量，
+                其他键为数据类型(int/float/str/dict/list/tuple)，
+                值为对应的生成规则
+    生成:
+        随机生成的样本数据
+    """
+    num = kwargs.get('num', 1)
+    for _ in range(num):
+        res = []
+        for k, v in kwargs.items():
+            if k == 'num':
+                continue
+            elif k == int:
+                start, end = v['datarange']
+                res.append(random.randint(start, end))
+            elif k == float:
+                start, end = v['datarange']
+                res.append(round(random.uniform(start, end), 2))
+            elif k == str:
+                chars = v['datarange']
+                length = v['len']
+                temp = ''.join(random.choices(chars, k=length))
+                res.append(temp)
+            elif k == dict:
+                elem = {}
+                for key in v.get('keys', []):
+                    elem[key] = random.choice([
+                        random.randint(0, 10),
+                        round(random.uniform(0.0, 1.0), 2)
+                    ])
+                res.append(elem)
+            elif k == list:
+                res.append(list(data_generator(v)))
+            elif k == tuple:
+                res.append(tuple(data_generator(v)))
+            else:
+                continue
+        yield tuple(res)
+
+
+def main():
+    # 使用范例1: 生成单个复杂结构样本
+    struct1 = {
+        'num': 3,  # 生成3个样本
+        tuple: {
+            int: {'datarange': (0, 100)},
+            float: {'datarange': (0.0, 100.0)},
+            str: {'datarange': string.ascii_uppercase, 'len': 5},
+            list: {
+                'num': 2,  # 每个样本中的列表包含2个元素
+                int: {'datarange': (100, 200)}
+            },
+            dict: {'keys': ['age', 'score']}
+        }
+    }
+
+    print("生成样本并统计:")
+    generator = data_generator(struct1)
+
+    # 遍历生成器以触发统计
+    for i, sample in enumerate(generator, 1):
+        print(f"\n样本{i}: {sample}")
+
+
+if __name__ == '__main__':
+    main()
