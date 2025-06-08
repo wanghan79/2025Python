@@ -1,58 +1,34 @@
 #!/usr/bin/env python
 # coding:utf-8
 
-import largeXMLDealer
 import sys
+from largeXMLDealer import xml_dealer
 
 
-def dealwithElement(elem):
-    """"""
-    if isinstance(elem, object):
-        print(elem.text)
+@xml_dealer(elem_tag="accession")
+def process_accessions(elem):
+    """处理accession标签的函数"""
+    if elem.text:
+        print(elem.text.strip())
+
+
+@xml_dealer(elem_tag="sequence")
+def process_sequence(elem):
+    """处理sequence标签的函数"""
+    if elem.text:
+        print(elem.text.strip())
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) == 2:
-    fileName = sys.argv[1]
-    elemTag = sys.argv[2]
+    if len(sys.argv) != 2:
+        print("Usage: python callDealer.py <xml_file>")
+        sys.exit(1)
 
-    # print("%s, %s"%(fileName, elemTag))
-    lxmld = largeXMLDealer.largeXMLDealer()
-    count = lxmld.parse(fileName, elemTag, dealwithElement)
-    print("Already parsed %d XML elements." % count)
+    file_name = sys.argv[1]
 
-# '''
-# CALL EXAMPLE 1:
-# COMMAND LINE:     python3 callDealer.py P00734.xml accession
-# OUTPUT:
-# P00734
-# B2R7F7
-# B4E1A7
-# Q4QZ40
-# Q53H04
-# Q53H06
-# Q69EZ7
-# Q7Z7P3
-# Q9UCA1
-# Already parsed 9 XML elements.
+    # 根据需要调用不同的处理函数
+    print("\nProcessing accessions:")
+    process_accessions(file_name)
 
-
-# CALL EXAMPLE 2:
-# COMMAND LINE:     python3 callDealer.py P00734.xml sequence
-# OUTPUT:
-# MAHVRGLQLPGCLALAALCSLVHSQHVFLAPQQARSLLQRVRRANTFLEEVRKGNLEREC
-# VEETCSYEEAFEALESSTATDVFWAKYTACETARTPRDKLAACLEGNCAEGLGTNYRGHV
-# NITRSGIECQLWRSRYPHKPEINSTTHPGADLQENFCRNPDSSTTGPWCYTTDPTVRRQE
-# CSIPVCGQDQVTVAMTPRSEGSSVNLSPPLEQCVPDRGQQYQGRLAVTTHGLPCLAWASA
-# QAKALSKHQDFNSAVQLVENFCRNPDGDEEGVWCYVAGKPGDFGYCDLNYCEEAVEEETG
-# DGLDEDSDRAIEGRTATSEYQTFFNPRTFGSGEADCGLRPLFEKKSLEDKTERELLESYI
-# DGRIVEGSDAEIGMSPWQVMLFRKSPQELLCGASLISDRWVLTAAHCLLYPPWDKNFTEN
-# DLLVRIGKHSRTRYERNIEKISMLEKIYIHPRYNWRENLDRDIALMKLKKPVAFSDYIHP
-# VCLPDRETAASLLQAGYKGRVTGWGNLKETWTANVGKGQPSVLQVVNLPIVERPVCKDST
-# RIRITDNMFCAGYKPDEGKRGDACEGDSGGPFVMKSPFNNRWYQMGIVSWGEGCDRDGKY
-# GFYTHVFRLKKWIQKVIDQFGE
-
-# Already parsed 1 XML elements.
-# '''
-#!/usr/bin/env python
-# coding:utf-8
+    print("\nProcessing sequence:")
+    process_sequence(file_name)
