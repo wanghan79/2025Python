@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding:utf-8
-
+"""
+2023012373赵浚彤
+2025春季学期python&操作系统
+结课作业
+"""
 import largeXMLDealer
 import sys
 
