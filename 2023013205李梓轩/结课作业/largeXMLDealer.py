@@ -1,47 +1,68 @@
-###################################################################################
-##
-##  Import
-##
-###################################################################################
+#!/usr/bin/env python
+# coding:utf-8
+
+"""
+Author: H.Wang --<>
+Purpose: XML 迭代解析修饰器
+Created: 4/4/2016
+Updated: 添加修饰器功能
+"""
+
 from lxml import etree
 from os import path
+from functools import wraps
 
-###################################################################################
-##
-##  Class
-##
-###################################################################################
 
-class largeXMLDealer:
+def xml_dealer(elem_tag):
+    """
+    XML 迭代解析修饰器
+    :param elem_tag: 要处理的XML元素标签
+    """
 
-    def __init__(self):
-        """构造函数"""
-        pass
+    def decorator(process_func):
+        @wraps(process_func)
+        def wrapper(file_name):
+            if not path.isfile(file_name) or not file_name.endswith("xml"):
+                raise FileNotFoundError(f"XML file not found: {file_name}")
 
-    def parse(self, fileName, func_for_element):
-        """
-        迭代解析一个XML文件，并在遇到每个元素的结束标签时调用 func_for_element。
-        此方法处理文档中的所有元素。
-        """
-        if not path.isfile(fileName):
-            print(f"文件: {fileName} 不存在。")
-            return
+            ns = _get_namespace(file_name)
+            full_tag = f"{{{ns}}}{elem_tag}" if ns else elem_tag
 
-        try:
-            context = etree.iterparse(fileName, events=('end',), recover=True)
+            count = 0
+            context = etree.iterparse(file_name, events=('end',), tag=full_tag)
+
             for event, elem in context:
-                if func_for_element:
-                    try:
-                        # 将元素传递给回调函数
-                        func_for_element(elem)
-                    except Exception as e:
-                        print(f"处理元素 <{elem.tag if elem is not None else 'None'}> 的回调函数出错: {e}")
-                        pass
-                if elem is not None: # 确保 elem 不为 None 后再进行清理
+                try:
+                    # 调用被修饰的处理函数
+                    process_func(elem)
+                except Exception as e:
+                    raise RuntimeError(f"Processing error: {e}")
+                finally:
+                    # 清理元素释放内存
                     elem.clear()
-        except etree.XMLSyntaxError as e:
-            print(f"解析文件 {fileName} XML语法错误: {e}")
-            pass
-        except Exception as e: # 捕获解析过程中其他潜在的错误
-            print(f"解析文件 {fileName} 时发生意外错误: {e}")
-            pass
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
+                    count += 1
+
+            del context
+            print(f"Parsed {count} XML elements.")
+            return count
+
+        return wrapper
+
+    return decorator
+
+
+def _get_namespace(file_name):
+    """获取XML文件的命名空间"""
+    if not path.isfile(file_name) or not file_name.endswith("xml"):
+        raise FileNotFoundError
+
+    context = etree.iterparse(file_name, events=('start-ns',))
+    for event, elem in context:
+        _, namespace = elem
+        if namespace:
+            return namespace
+        break
+    del context
+    return ""
