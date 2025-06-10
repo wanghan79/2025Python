@@ -2,9 +2,9 @@
 # coding:utf-8
 
 """
-Author: H.Wang --<>
+Author: Li Zixuan
 Purpose: XML 迭代解析修饰器
-Created: 4/4/2016
+Created: 2025/6/10
 Updated: 添加修饰器功能
 """
 
