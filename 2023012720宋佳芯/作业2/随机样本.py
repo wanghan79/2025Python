@@ -4,23 +4,11 @@ from typing import Any, Dict, List, Union, Iterable
 
 
 class RandomGenerator:
-    """
-    改进的随机数据生成器，支持多种数据类型和嵌套结构
-    """
+
 
     @staticmethod
     def generate(config: Dict[str, Any]) -> List[Any]:
-        """
-        根据配置生成随机数据
 
-        参数:
-            config: 配置字典，包含生成规则
-                - 'num': 生成的数据数量
-                - 其他键为数据类型或字段名，值为生成规则
-
-        返回:
-            生成的随机数据列表
-        """
         num = config.get('num', 1)
         result = []
 
@@ -32,15 +20,7 @@ class RandomGenerator:
 
     @staticmethod
     def _generate_item(config: Dict[str, Any]) -> Any:
-        """
-        生成单个数据项
 
-        参数:
-            config: 单个数据项的配置
-
-        返回:
-            生成的随机数据
-        """
         if isinstance(config, dict) and 'type' in config:
             # 处理显式类型声明
             return RandomGenerator._generate_by_type(config)
@@ -55,15 +35,7 @@ class RandomGenerator:
 
     @staticmethod
     def _generate_by_type(type_config: Dict[str, Any]) -> Any:
-        """
-        根据类型配置生成随机数据
-
-        参数:
-            type_config: 类型配置字典，必须包含'type'键
-
-        返回:
-            生成的随机数据
-        """
+        
         data_type = type_config['type']
         params = type_config.get('params', {})
 
