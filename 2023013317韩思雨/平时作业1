@@ -1,1 +1,152 @@
+def bankers_algorithm(Max, Allocated, Available, Request, process_id):
+    """
+    银行家算法实现
 
+    参数:
+        Max: 最大需求矩阵 (n x m), n=进程数, m=资源类型数
+        Allocated: 已分配矩阵 (n x m)
+        Available: 可用资源向量 (1 x m)
+        Request: 请求资源向量 (1 x m)
+        process_id: 请求资源的进程ID (0到n-1)
+
+    返回:
+        tuple: (是否安全, 分配后的Max, Need, Available, Allocated)
+    """
+    # 计算当前需求矩阵
+    Need = [[Max[i][j] - Allocated[i][j] for j in range(len(Max[0]))] for i in range(len(Max))]
+
+    # 1. 检查请求是否小于等于需求
+    if not all(Request[i] <= Need[process_id][i] for i in range(len(Request))):
+        print("\n拒绝原因: 请求超过声明的最大需求")
+        return False, Max, Need, Available, Allocated
+
+    # 2. 检查请求是否小于等于可用资源
+    if not all(Request[i] <= Available[i] for i in range(len(Request))):
+        print("\n拒绝原因: 可用资源不足")
+        return False, Max, Need, Available, Allocated
+
+    # 3. 尝试分配资源（临时修改）
+    temp_Available = Available.copy()
+    temp_Allocated = [row.copy() for row in Allocated]
+    temp_Need = [row.copy() for row in Need]
+
+    # 模拟分配
+    for i in range(len(Request)):
+        temp_Available[i] -= Request[i]
+        temp_Allocated[process_id][i] += Request[i]
+        temp_Need[process_id][i] -= Request[i]
+
+    # 4. 检查安全性
+    if is_safe(temp_Need, temp_Available, temp_Allocated):
+        print("\n分配成功！系统处于安全状态")
+        return True, Max, temp_Need, temp_Available, temp_Allocated
+    else:
+        print("\n拒绝原因: 分配会导致系统进入不安全状态")
+        return False, Max, Need, Available, Allocated
+
+
+def is_safe(Need, Available, Allocated):
+    """
+    安全性检查算法
+
+    参数:
+        Need: 需求矩阵
+        Available: 可用资源向量
+        Allocated: 已分配矩阵
+
+    返回:
+        bool: 系统是否处于安全状态
+    """
+    n = len(Need)  # 进程数
+    m = len(Available)  # 资源类型数
+
+    work = Available.copy()
+    finish = [False] * n
+    safe_sequence = []
+
+    while True:
+        found = False
+        for i in range(n):
+            if not finish[i] and all(Need[i][j] <= work[j] for j in range(m)):
+                # 模拟执行并释放资源
+                for j in range(m):
+                    work[j] += Allocated[i][j]
+                finish[i] = True
+                safe_sequence.append(i)
+                found = True
+                break
+
+        if not found:
+            break
+
+    if all(finish):
+        print(f"找到安全序列: {safe_sequence}")
+        return True
+    else:
+        return False
+
+
+def print_matrices(Max, Need, Available, Allocated):
+    """打印四个矩阵的当前状态"""
+    print("\n当前系统状态:")
+    print(f"{'Max矩阵:':<15}", Max)
+    print(f"{'Allocated矩阵:':<15}", Allocated)
+    print(f"{'Need矩阵:':<15}", Need)
+    print(f"{'Available向量:':<15}", Available)
+
+
+# 示例使用
+if __name__ == "__main__":
+    # 示例数据 (5个进程，3种资源)
+    Max = [
+        [7, 5, 3],
+        [3, 2, 2],
+        [9, 0, 2],
+        [2, 2, 2],
+        [4, 3, 3]
+    ]
+
+    Allocated = [
+        [0, 1, 0],
+        [2, 0, 0],
+        [3, 0, 2],
+        [2, 1, 1],
+        [0, 0, 2]
+    ]
+
+    Available = [3, 3, 2]
+
+    # 初始状态
+    Need = [[Max[i][j] - Allocated[i][j] for j in range(3)] for i in range(5)]
+    print("===== 初始状态 =====")
+    print_matrices(Max, Need, Available, Allocated)
+
+    # 测试1: 进程1请求[1, 0, 2]
+    print("\n===== 测试1: 进程1请求[1, 0, 2] =====")
+    Request = [1, 0, 2]
+    process_id = 1
+    can_allocate, new_Max, new_Need, new_Available, new_Allocated = bankers_algorithm(
+        Max, Allocated, Available, Request, process_id
+    )
+    if can_allocate:
+        print_matrices(new_Max, new_Need, new_Available, new_Allocated)
+
+    # 测试2: 进程4请求[3, 3, 0] (应该被拒绝)
+    print("\n===== 测试2: 进程4请求[3, 3, 0] =====")
+    Request = [3, 3, 0]
+    process_id = 4
+    can_allocate, new_Max, new_Need, new_Available, new_Allocated = bankers_algorithm(
+        Max, Allocated, Available, Request, process_id
+    )
+    if can_allocate:
+        print_matrices(new_Max, new_Need, new_Available, new_Allocated)
+
+    # 测试3: 进程0请求[0, 2, 0]
+    print("\n===== 测试3: 进程0请求[0, 2, 0] =====")
+    Request = [0, 2, 0]
+    process_id = 0
+    can_allocate, new_Max, new_Need, new_Available, new_Allocated = bankers_algorithm(
+        Max, Allocated, Available, Request, process_id
+    )
+    if can_allocate:
+        print_matrices(new_Max, new_Need, new_Available, new_Allocated)
