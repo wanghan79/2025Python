@@ -4,143 +4,132 @@
 平时作业3
 """
 import random
-import string
-from typing import Dict, Any, Union, List, Tuple, Callable
-from functools import wraps
 
+# 定义样本生成函数
+def create_string(config):
+    """从指定字符串中随机生成指定长度的字符串"""
+    return ''.join(random.choices(config['datarange'], k=config['len']))
 
-def stats_decorator(operations: List[str]):
-    """
-    带参数的装饰器，用于统计随机样本生成函数的输出结果
+def create_integer(config):
+    """从随机数范围中生成随机整数"""
+    return random.randint(config['datarange'][0], config['datarange'][1])
 
-    参数:
-        operations: 统计操作列表，可选'sum', 'avg', 'max', 'min'
-    """
+def create_float(config):
+    """从随机数范围中生成随机浮点数"""
+    return random.uniform(config['datarange'][0], config['datarange'][1])
 
-    def decorator(func: Callable):
-        @wraps(func)
+def create_list(config):
+    """生成列表"""
+    return [generate_random_sample({k: v}) for k, v in config.items()]
+
+def create_dict(config):
+    """生成字典"""
+    return {k: generate_random_sample({k: v}) for k, v in config.items()}
+
+def create_tuple(config):
+    """生成元组"""
+    return tuple(generate_random_sample({k: v}) for k, v in config.items())
+
+# 建立类型到生成函数的映射
+TYPE_GENERATOR_MAP = {
+    'str': create_string,
+    'int': create_integer,
+    'float': create_float,
+    'list': create_list,
+    'dict': create_dict,
+    'tuple': create_tuple,
+}
+
+def extract_integer_values(data):
+    """仅提取生成数据中的整数值"""
+    integers = []
+    if isinstance(data, (list, tuple, set)):
+        for element in data:
+            integers.extend(extract_integer_values(element))
+    elif isinstance(data, dict):
+        for _, value in data.items():
+            integers.extend(extract_integer_values(value))
+    elif isinstance(data, int):  # 只保留整数类型，忽略浮点数
+        integers.append(data)
+    return integers
+
+def StatisticsDecorator(**options):
+    """装饰器函数，仅对整数进行统计"""
+    def inner_decorator(func):
         def wrapper(*args, **kwargs):
-            # 调用原函数获取生成器
-            generator = func(*args, **kwargs)
+            stats_methods = options.get('methods', [])
+            samples = []
+            for sample in func(*args, **kwargs):
+                print(sample)
+                samples.append(sample)
+            if not samples:
+                return None
 
-            # 遍历生成器的所有结果
-            all_results = []
-            for result in generator:
-                all_results.append(result)
-                yield result  # 保持生成器特性，继续yield结果
+            # 仅提取整数
+            all_integers = []
+            for sample in samples:
+                all_integers.extend(extract_integer_values(sample))
 
-            # 如果没有结果，直接返回
-            if not all_results:
-                return
+            if not all_integers:
+                return None
 
-            # 展平所有结果以便统计
-            flat_values = []
-            for res in all_results:
-                # 递归展平嵌套结构
-                def flatten(item):
-                    if isinstance(item, (int, float)):
-                        return [item]
-                    elif isinstance(item, (list, tuple)):
-                        return [x for sub in item for x in flatten(sub)]
-                    elif isinstance(item, dict):
-                        return [x for val in item.values() for x in flatten(val)]
-                    return []
-
-                flat_values.extend(flatten(res))
-
-            # 过滤出数字类型(整数和浮点数)
-            numbers = [x for x in flat_values if isinstance(x, (int, float))]
-
-            # 如果没有数字，跳过统计
-            if not numbers:
-                print("没有找到可统计的数字数据")
-                return
-
-            # 执行统计操作
-            print("\n统计结果:")
-            if 'sum' in operations:
-                print(f"总和(sum): {sum(numbers)}")
-            if 'avg' in operations:
-                print(f"平均值(avg): {sum(numbers) / len(numbers):.2f}")
-            if 'max' in operations:
-                print(f"最大值(max): {max(numbers)}")
-            if 'min' in operations:
-                print(f"最小值(min): {min(numbers)}")
-
+            # 计算统计数据（仅针对整数）
+            results = []
+            for method in stats_methods:
+                if method == 'SUM':
+                    results.append(('SUM', sum(all_integers)))
+                elif method == 'AVG':
+                    results.append(('AVG', sum(all_integers) / len(all_integers)))
+                elif method == 'MAX':
+                    results.append(('MAX', max(all_integers)))
+                elif method == 'MIN':
+                    results.append(('MIN', min(all_integers)))
+                else:
+                    raise ValueError("Unsupported statistics method")
+            return results
         return wrapper
+    return inner_decorator
 
-    return decorator
+def generate_random_sample(structure):
+    """生成指定结构配置的随机样本"""
+    if len(structure) != 1:
+        raise ValueError(f"结构配置必须包含且仅包含一个类型键：{structure}")
+    type_key, config = next(iter(structure.items()))
+    if type_key not in TYPE_GENERATOR_MAP:
+        raise ValueError(f"不支持的类型：'{type_key}'")
+    return TYPE_GENERATOR_MAP[type_key](config)
 
+@StatisticsDecorator(methods=['SUM', 'AVG', 'MAX', 'MIN'])
+def sample_generator(**kwargs):
+    """随机数生成器"""
+    num_samples = kwargs.pop('number', 1)
+    for _ in range(num_samples):
+        yield generate_random_sample(kwargs)
 
-@stats_decorator(operations=['sum', 'avg', 'max', 'min'])
-def data_generator(kwargs: Dict[Any, Any]) -> Union[Tuple, List[Tuple]]:
-    """
-    使用生成器生成随机样本
-
-    参数:
-        kwargs: 包含生成规则的字典，必须包含'num'键指定生成数量，
-                其他键为数据类型(int/float/str/dict/list/tuple)，
-                值为对应的生成规则
-    生成:
-        随机生成的样本数据
-    """
-    num = kwargs.get('num', 1)
-    for _ in range(num):
-        res = []
-        for k, v in kwargs.items():
-            if k == 'num':
-                continue
-            elif k == int:
-                start, end = v['datarange']
-                res.append(random.randint(start, end))
-            elif k == float:
-                start, end = v['datarange']
-                res.append(round(random.uniform(start, end), 2))
-            elif k == str:
-                chars = v['datarange']
-                length = v['len']
-                temp = ''.join(random.choices(chars, k=length))
-                res.append(temp)
-            elif k == dict:
-                elem = {}
-                for key in v.get('keys', []):
-                    elem[key] = random.choice([
-                        random.randint(0, 10),
-                        round(random.uniform(0.0, 1.0), 2)
-                    ])
-                res.append(elem)
-            elif k == list:
-                res.append(list(data_generator(v)))
-            elif k == tuple:
-                res.append(tuple(data_generator(v)))
-            else:
-                continue
-        yield tuple(res)
-
-
-def main():
-    # 使用范例1: 生成单个复杂结构样本
-    struct1 = {
-        'num': 3,  # 生成3个样本
-        tuple: {
-            int: {'datarange': (0, 100)},
-            float: {'datarange': (0.0, 100.0)},
-            str: {'datarange': string.ascii_uppercase, 'len': 5},
-            list: {
-                'num': 2,  # 每个样本中的列表包含2个元素
-                int: {'datarange': (100, 200)}
+if __name__ == '__main__':
+    example_config = {
+        'number': 5,
+        'tuple': {
+            'str': {
+                'datarange': 'abcdefghijklmnopqrstuvwxyz',
+                'len': 8
             },
-            dict: {'keys': ['age', 'score']}
+            'list': {
+                'int': {
+                    'datarange': [1, 100]
+                },
+                'float': {
+                    'datarange': [1, 100]  # 仍生成浮点数，但不会被统计
+                }
+            },
+            'dict': {
+                'int': {
+                    'datarange': [1, 100]
+                }
+            }
         }
     }
 
-    print("生成样本并统计:")
-    generator = data_generator(struct1)
-
-    # 遍历生成器以触发统计
-    for i, sample in enumerate(generator, 1):
-        print(f"\n样本{i}: {sample}")
-
-
-if __name__ == '__main__':
-    main()
+    stats_results = sample_generator(**example_config)
+    for stat_method, value in stats_results:
+        print(f"The {stat_method} of integers: {value}")
