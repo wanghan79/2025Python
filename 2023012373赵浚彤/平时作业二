@@ -4,60 +4,120 @@
 平时作业2
 """
 import random
-import string
-from typing import Dict, Any, Union, List, Tuple
 
-def data_generator(kwargs: Dict[Any, Any]) -> Union[Tuple, List[Tuple]]:
-    num = kwargs.get('num', 1)
-    for _ in range(num):
-        res = []
-        for k, v in kwargs.items():
-            if k == 'num':
-                continue
-            elif k == int:
-                start, end = v['datarange']
-                res.append(random.randint(start, end))
-            elif k == float:
-                start, end = v['datarange']
-                res.append(round(random.uniform(start, end), 2))
-            elif k == str:
-                chars = v['datarange']
-                length = v['len']
-                temp = ''.join(random.choices(chars, k=length))
-                res.append(temp)
-            elif k == dict:
-                elem = {}
-                for key in v.get('keys', []):
-                    elem[key] = random.choice([
-                        random.randint(0, 10),
-                        round(random.uniform(0.0, 1.0), 2)
-                    ])
-                res.append(elem)
-            elif k == list:
-                res.append(list(data_generator(v)))
-            elif k == tuple:
-                res.append(tuple(data_generator(v)))
-            else:
-                continue
-        yield tuple(res)
+# 生成随机字符串的函数
+def create_random_string(config):
+    """
+    根据配置生成指定长度的随机字符串。
+    :param config: 包含 'datarange'（字符范围）和 'len'（字符串长度）的字典
+    :return: 生成的随机字符串
+    """
+    return ''.join(random.choices(config['datarange'], k=config['len']))
 
-def main():
-    struct1 = {
-        'num': 1,
-        tuple: {
-            int: {'datarange': (0, 100)},
-            float: {'datarange': (0.0, 100.0)},
-            str: {'datarange': string.ascii_uppercase, 'len': 5},
-            list: {
-                'num': 3,
-                int: {'datarange': (100, 200)}
+# 生成随机整数的函数
+def create_random_integer(config):
+    """
+    根据配置生成指定范围内的随机整数。
+    :param config: 包含 'datarange'（整数范围）的字典
+    :return: 生成的随机整数
+    """
+    return random.randint(config['datarange'][0], config['datarange'][1])
+
+# 生成随机浮点数的函数
+def create_random_float(config):
+    """
+    根据配置生成指定范围内的随机浮点数。
+    :param config: 包含 'datarange'（浮点数范围）的字典
+    :return: 生成的随机浮点数
+    """
+    return random.uniform(config['datarange'][0], config['datarange'][1])
+
+# 生成随机列表的函数
+def create_random_list(config):
+    """
+    根据配置生成包含随机元素的列表。
+    :param config: 包含子类型配置的字典
+    :return: 生成的随机列表
+    """
+    return [create_single_sample({k: v}) for k, v in config.items()]
+
+# 生成随机字典的函数
+def create_random_dict(config):
+    """
+    根据配置生成包含随机值的字典。
+    :param config: 包含子类型配置的字典
+    :return: 生成的随机字典
+    """
+    return {k: create_single_sample({k: v}) for k, v in config.items()}
+
+# 生成随机元组的函数
+def create_random_tuple(config):
+    """
+    根据配置生成包含随机元素的元组。
+    :param config: 包含子类型配置的字典
+    :return: 生成的随机元组
+    """
+    return tuple(create_single_sample({k: v}) for k, v in config.items())
+
+# 类型到生成函数的映射
+TYPE_MAP = {
+    'str': create_random_string,
+    'int': create_random_integer,
+    'float': create_random_float,
+    'list': create_random_list,
+    'dict': create_random_dict,
+    'tuple': create_random_tuple
+}
+
+# 生成单个随机样本的函数
+def create_single_sample(structure):
+    """
+    根据结构配置生成单个随机样本。
+    :param structure: 包含一个类型键和对应配置的字典
+    :return: 生成的随机样本
+    """
+    if len(structure) != 1:
+        raise ValueError(f"结构配置必须只包含一个类型键：{structure}")
+    data_type, config = next(iter(structure.items()))
+    if data_type not in TYPE_MAP:
+        raise ValueError(f"不支持的类型：'{data_type}'")
+    return TYPE_MAP[data_type](config)
+
+# 随机样本生成器函数
+def sample_creator(**parameters):
+    """
+    随机样本生成器，根据参数生成指定数量的随机样本。
+    :param parameters: 包含 'number'（样本数量）和结构配置的关键字参数
+    :yield: 生成的随机样本
+    """
+    sample_count = parameters.pop('number', 1)
+    for _ in range(sample_count):
+        yield create_single_sample(parameters)
+
+if __name__ == '__main__':
+    sample_config = {
+        'number': 5,
+        'tuple': {
+            'str': {
+                'datarange': 'abcdefghijklmnopqrstuvwxyz',
+                'len': 8
             },
-            dict: {'keys': ['age', 'score']}
+            'list': {
+                'int': {
+                    'datarange': [1, 10]
+                },
+                'float': {
+                    'datarange': [1, 10]
+                }
+            },
+            'dict': {
+                'int': {
+                    'datarange': [1, 10]
+                }
+            }
         }
     }
 
-    generater = data_generator(struct1)
-    print(next(generater))
-
-if __name__ == '__main__':
-    main()
+    # 迭代生成器并打印样本
+    for sample in sample_creator(**sample_config):
+        print(sample)
