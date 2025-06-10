@@ -1,7 +1,11 @@
 import random
 import math
 import string
-
+'''
+通过装饰器实现了一个数据统计分析工具，
+它能够从复杂结构数据中提取数值型数据，
+并提供交互式界面让用户选择数据类型（整数、浮点数或两者）和统计方法（求和、均值、方差、均方根误差、最大值、最小值）进行计算。
+'''
 def StaticRes(*stats):
     def decorator(func):
         def wrapper(*args, **kwargs):
