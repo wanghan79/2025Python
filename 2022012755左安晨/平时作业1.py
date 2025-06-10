@@ -1,3 +1,9 @@
+
+"""
+  Author:  Zuoanchen
+  Created: 10/6/2025
+"""
+
 def banker_algorithm(max_matrix, allocated_matrix, available_matrix, request_process, request_vector):
     """
     银行家算法实现
