@@ -1,1 +1,199 @@
+import random
+import datetime
+from functools import wraps
+from typing import Any, Dict, Generator, List, Tuple, Union
+from numbers import Number
+# 递归提取字典中的所有数值
+def flatten_dict_values(d):
+    """递归提取字典中的所有数值"""
+    for v in d.values():
+        if isinstance(v, dict):
+            yield from flatten_dict_values(v)
+        elif isinstance(v, (list, tuple)):
+            for item in v:
+                if isinstance(item, Number):
+                    yield item
+        elif isinstance(v, Number):
+            yield v
+# 带参数的装饰器
+def stats_decorator(*stats_args):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 初始化统计结果
+            results = []
+            stats = {
+                'sum': 0,
+                'avg': None,
+                'max': None,
+                'min': None,
+                'count': 0
+            }
 
+            # 处理生成器数据
+            for data in func(*args, **kwargs):
+                results.append(data)
+
+                # 遍历字典的所有数值（包括嵌套字典、列表、元组）
+                for value in flatten_dict_values(data):
+                    stats['sum'] += value
+                    stats['count'] += 1
+                    stats['max'] = value if stats['max'] is None else max(stats['max'], value)
+                    stats['min'] = value if stats['min'] is None else min(stats['min'], value)
+                    if stats['count'] > 0:
+                        stats['avg'] = stats['sum'] / stats['count']
+
+            # 根据装饰器参数返回不同的统计信息
+            output = {}
+            for arg in stats_args:
+                if arg in stats:
+                    output[arg] = stats[arg]
+
+            # 返回原始数据和统计结果
+            return results, output
+
+        return wrapper
+
+    return decorator
+
+
+# 默认数据范围
+DEFAULT_RANGES = {
+    'int': (0, 100),
+    'float': (0.0, 100.0),
+    'double': (0.0, 100.0),
+    'long': (0, 100),
+    'date': (datetime.date(2000, 1, 1), datetime.date(2023, 12, 31)),
+    'str': (5, 20)  # 字符串长度范围
+}
+
+
+def random_data_generator(data_structure: Dict[str, Any], *args, **kwargs) -> Generator[
+    Union[int, float, str, datetime.date, Dict, List, Tuple], None, None]:
+    """
+    随机数据生成器，支持递归生成嵌套数据结构
+
+    Args:
+        data_structure: 定义数据结构的字典
+        *args: 可变位置参数
+        **kwargs: 可变关键字参数
+
+    Yields:
+        生成的随机数据
+    """
+    cnt = kwargs.get('cnt', 0)
+    total = kwargs.get('total', 1)
+
+    while cnt < total:
+        yield generate_data(data_structure, **kwargs)
+        cnt += 1
+
+
+def generate_data(data_structure: Dict[str, Any], **kwargs) -> Union[int, float, str, datetime.date, Dict, List, Tuple]:
+    """
+    根据数据结构生成随机数据
+
+    Args:
+        data_structure: 定义数据结构的字典
+        **kwargs: 可变关键字参数
+
+    Returns:
+        生成的随机数据
+    """
+    data_type = data_structure.get('type')
+    data_range = data_structure.get('range', None)
+    size = data_structure.get('size', 5)  # 默认数组/元组大小
+
+    # 处理嵌套字典
+    if data_type == 'dict':
+        result = {}
+        for key, value in data_structure['fields'].items():
+            result[key] = generate_data(value, **kwargs)
+        return result
+
+    # 处理数组/列表
+    elif data_type == 'list':
+        return [generate_data(data_structure['item'], **kwargs) for _ in range(size)]
+
+    # 处理元组
+    elif data_type == 'tuple':
+        return tuple(generate_data(data_structure['item'], **kwargs) for _ in range(size))
+
+    # 处理各种基本数据类型
+    elif data_type in DEFAULT_RANGES:
+        if data_range is None:
+            data_range = DEFAULT_RANGES[data_type]
+
+        if data_type == 'int':
+            return random.randint(*data_range)
+        elif data_type == 'float':
+            return random.uniform(*data_range)
+        elif data_type == 'double':
+            return random.uniform(*data_range)
+        elif data_type == 'long':
+            return random.randint(*data_range)
+        elif data_type == 'date':
+            start, end = data_range
+            delta = end - start
+            random_days = random.randint(0, delta.days)
+            return start + datetime.timedelta(days=random_days)
+        elif data_type == 'str':
+            min_len, max_len = data_range
+            length = random.randint(min_len, max_len)
+            return ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=length))
+
+    # 默认返回None
+    return None
+
+
+# 示例使用
+if __name__ == "__main__":
+    # 定义一个复杂的数据结构
+    complex_structure = {
+        'type': 'dict',
+        'fields': {
+            'id': {'type': 'int', 'range': (1, 10000)},
+            'name': {'type': 'str', 'range': (5, 10)},
+            'price': {'type': 'float', 'range': (10.0, 1000.0)},
+            'details': {
+                'type': 'dict',
+                'fields': {
+                    'color': {'type': 'str', 'range': (3, 7)},
+                    'sizes': {'type': 'list', 'item': {'type': 'int', 'range': (35, 50)}, 'size': 3},
+                    'manufacture_date': {'type': 'date'}
+                }
+            },
+            'tags': {'type': 'tuple', 'item': {'type': 'str', 'range': (3, 5)}, 'size': 4}
+        }
+    }
+
+
+    # 使用装饰器统计数值数据
+    @stats_decorator('sum', 'avg', 'max', 'min')
+    def generate_complex_data(structure, count=10, **kwargs):
+        return random_data_generator(structure, total=count, **kwargs)
+
+
+    # 生成10条数据并获取统计信息
+    data, stats = generate_complex_data(complex_structure, count=2)
+
+    print("Generated Data Sample:")
+    for i, item in enumerate(data[:2]):  # 只打印前2条作为示例
+        print(f"Item {i + 1}: {item}")
+
+    print("\nStatistics:")
+    print(f"Sum: {stats['sum']}")
+    print(f"Average: {stats['avg']}")
+    print(f"Max: {stats['max']}")
+    print(f"Min: {stats['min']}")
+
+    # 生成大数据量的示例（这里只生成1000条作为演示）
+    print("\nGenerating large amount of data (1,000 items)...")
+    large_data_gen = random_data_generator(complex_structure, total=1000)
+    for i, item in enumerate(large_data_gen):
+        if i < 2:  # 打印前2条作为示例
+            print(f"Large Item {i + 1}: {item}")
+        if i % 100000 == 0 and i > 0:  # 每10万条打印进度
+            print(f"Generated {i} items...")
+
+    print("Data generation complete.")
