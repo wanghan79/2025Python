@@ -3,6 +3,7 @@ from lxml import etree
 from largeXMLDealer import largeXMLDealer
 import os
 import sys
+import time
 
 def xml_parser():
     """
@@ -25,14 +26,19 @@ def xml_parser():
             # 创建XML处理器
             dealer = largeXMLDealer()
             
+            # 计数器初始化
+            element_count = 0
+            
             # 定义元素处理回调
             def element_processor(elem):
+                nonlocal element_count
                 # 提取标签名（忽略命名空间）
                 raw_tag = elem.tag
                 tag_name = raw_tag.split('}', 1)[-1] if '}' in raw_tag else raw_tag
                 
                 # 检查标签匹配
                 if element_tag is None or tag_name == element_tag:
+                    element_count += 1
                     try:
                         # 调用被装饰的函数处理元素
                         func_to_decorate(elem, output_file=output_file)
@@ -40,10 +46,19 @@ def xml_parser():
                         print(f"警告: 处理元素 <{tag_name}> 时出错 - {str(e)}")
             
             # 开始解析XML
+            start_time = time.time()
+            file_size = os.path.getsize(file_name)
+            size_mb = file_size / (1024 * 1024)
             print(f"开始解析XML文件: '{file_name}'")
             print(f"目标标签: '{element_tag if element_tag else '所有标签'}'")
+            
             dealer.parse(file_name, element_processor)
-            print(f"XML解析完成")
+            
+            # 计算处理时间
+            elapsed = time.time() - start_time
+            speed = size_mb / elapsed if elapsed > 0 else float('inf')
+            
+            print(f"\n解析完成！共处理 {element_count} 个元素")
         
         return wrapper
     return decorator
@@ -51,24 +66,19 @@ def xml_parser():
 @xml_parser()
 def process_element(elem, output_file=None):
     """
-    元素处理函数
+    简洁的元素处理函数
     :param elem: XML元素对象
     :param output_file: 输出文件对象
     """
-    # 提取元素文本内容
-    text = elem.text.strip() if elem.text and elem.text.strip() else ""
-    
-    # 提取标签名（忽略命名空间）
-    tag_name = elem.tag.split('}', 1)[-1] if '}' in elem.tag else elem.tag
-    
-    # 输出结果
-    if output_file:
-        output_file.write(f"<{tag_name}>\n")
-        output_file.write(text + "\n\n")
-    else:
-        print(f"--- 元素: <{tag_name}> ---")
-        print(text)
-        print("-----------------------\n")
+    # 提取元素文本内容 - 仅当有文本时处理
+    if elem.text and elem.text.strip():
+        text = elem.text.strip()
+        
+        # 输出结果
+        if output_file:
+            output_file.write(text + "\n")
+        else:
+            print(text)
 
 def print_usage():
     """打印使用说明"""
@@ -76,7 +86,7 @@ def print_usage():
     print("  python callDealer.py <XML文件> <目标标签> [输出文件]")
     print("示例:")
     print("  python callDealer.py proteins.xml accession")
-    print("  python callDealer.py proteins.xml sequence results.txt")
+    print("  python callDealer.py taxonomy.xml taxon results.txt")
     print("说明:")
     print("  - XML文件: 要解析的XML文件路径")
     print("  - 目标标签: 要处理的XML元素标签")
@@ -101,14 +111,13 @@ if __name__ == "__main__":
         if output_path:
             # 文件输出模式
             output_path = os.path.abspath(output_path)
-            print(f"结果将输出到: '{output_path}'")
             with open(output_path, 'w', encoding='utf-8') as f:
+                print(f"结果将输出到: '{output_path}'")
                 process_element(file_name=xml_file, element_tag=elem_tag, output_file=f)
         else:
             # 控制台输出模式
             process_element(file_name=xml_file, element_tag=elem_tag)
             
-        print("XML处理成功完成!")
     except Exception as e:
         print(f"处理XML时发生错误: {str(e)}")
         sys.exit(1)
