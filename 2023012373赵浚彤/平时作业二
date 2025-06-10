@@ -1,7 +1,8 @@
 """
 2023012373赵浚彤
 2025春季学期python
-平时作业2
+平时作业2：
+使用生成器生成随机样本，配套生成器使用范例代码，随机样本的数量和结构由调入者输入
 """
 import random
 
@@ -104,15 +105,15 @@ if __name__ == '__main__':
             },
             'list': {
                 'int': {
-                    'datarange': [1, 10]
+                    'datarange': [1, 100]
                 },
                 'float': {
-                    'datarange': [1, 10]
+                    'datarange': [1, 100]
                 }
             },
             'dict': {
                 'int': {
-                    'datarange': [1, 10]
+                    'datarange': [1, 100]
                 }
             }
         }
