@@ -7,7 +7,7 @@ from collections import defaultdict
 """
 采用装饰器模式和迭代解析方式,处理大型XML文件.
 输出特定标签的树形结构和统计信息，支持命令行和 IDE 环境运行。
-在有默认值时，无需在终端调用运行。
+在有默认文件 P00734 时，无需在终端调用运行。
 """
 class XMLHandler:
     def __init__(self, processor_func):
