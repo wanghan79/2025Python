@@ -1,97 +1,96 @@
-import string
 import random
+import string
 
 
-def structDataSampling(**kwargs):
-    num = kwargs.get('num', 1)
-
-    # 去掉外层的 'num' 参数
-    kwargs.pop('num', None)
+def structDataSampling(num, **kwargs):
+    """
+    :param num: 生成器生成的数量
+    :param kwargs: 生成器的参数
+    :return: generator: 生成器
+    """
 
     def generator():
         count = 0
         while count < num:
-            element = []  # 初始化为空列表
+            element = []
 
             for key, value in kwargs.items():
-                if key == "list":
+                if key == "int":
+                    element.append(random.randint(value['dataRange'][0], value['dataRange'][1]))
+                elif key == "float":
+                    element.append(random.randint(value['dataRange'][0], value['dataRange'][1]))
+                elif key == "str":
+                    length = value.get('length', 5)
+                    element.append(''.join(random.choices(list(value['dataRange']), k=length)))
+                elif key == "list":
                     element.append(list(generator_inner(**value)))
                 elif key == "dict":
                     element.append(dict(generator_inner(**value)))
-                elif key == "int":
-                    it = random.randint(value['datarange'][0], value['datarange'][1])
-                    element.append(it)
-                elif key == "float":
-                    it = random.uniform(value['datarange'][0], value['datarange'][1])
-                    element.append(it)
-                elif key == "str":
-                    length = value.get('len', 5)
-                    it = ''.join(random.choices(list(value['datarange']), k=length))
-                    element.append(it)
                 elif key == "tuple":
-                    # 递归生成元组内容
-                    tuple_content = list(generator_inner(**value))
-                    element.append(tuple(tuple_content))
+                    element.append(tuple(generator_inner(**value)))
                 else:
-                    print(f"Warning: Unsupported key '{key}' encountered.")
+                    print(f"'{key}' 并非有效的数据结构")
                     continue
-
             yield element
+
             count += 1
 
     return generator()
 
 
 def generator_inner(**kwargs):
+    """
+    :param kwargs: 生成器的参数
+    :return: generator: 生成器
+    """
     for key, value in kwargs.items():
-        if key == "list" or key == "dict":
-            for k, v in value.items():
-                if k == "list":
-                    yield from generator_inner(**v)
-                elif k == "dict":
-                    yield from generator_inner(**v)
-                elif k == "int":
-                    yield random.randint(v['datarange'][0], v['datarange'][1])
-                elif k == "float":
-                    yield random.uniform(v['datarange'][0], v['datarange'][1])
-                elif k == "str":
-                    length = v.get('len', 5)
-                    yield ''.join(random.choices(list(v['datarange']), k=length))
-                elif k == "tuple":
-                    yield tuple(generator_inner(**v))
-                else:
-                    print(f"Warning: Unsupported key '{k}' encountered.")
-        elif key == "int":
-            yield random.randint(value['datarange'][0], value['datarange'][1])
+        if key == "int":
+            yield random.randint(value['dataRange'][0], value['dataRange'][1])
         elif key == "float":
-            yield random.uniform(value['datarange'][0], value['datarange'][1])
+            yield random.uniform(value['dataRange'][0], value['dataRange'][1])
         elif key == "str":
-            length = value.get('len', 5)
-            yield ''.join(random.choices(list(value['datarange']), k=length))
+            length = value.get('length', 5)
+            yield ''.join(random.choices(list(value['dataRange']), k=length))
+        elif key == "list" or key == "dict":
+            for list_key, list_value in value.items():
+                if list_key == "int":
+                    yield random.randint(list_value['dataRange'][0], list_value['dataRange'][1])
+                elif list_key == "float":
+                    yield random.uniform(list_value['dataRange'][0], list_value['dataRange'][1])
+                elif list_key == "str":
+                    length = list_value.get('length', 5)
+                    yield ''.join(random.choices(list(list_value['dataRange']), k=length))
+                elif list_key == "list":
+                    yield list(generator_inner(**list_value))
+                elif list_key == "dict":
+                    yield dict(generator_inner(**list_value))
+                elif list_key == "tuple":
+                    yield tuple(generator_inner(**list_value))
         elif key == "tuple":
             yield tuple(generator_inner(**value))
         else:
-            print(f"Warning: Unsupported key '{key}' encountered.")
+            print(f"'{key}' 并非有效的数据结构")
+            continue
 
 
 def apply():
     struct = {
         "num": 10,
-        "int": {"datarange": (0, 100)},
-        "float": {"datarange": (0, 10000)},
-        "str": {"datarange": string.ascii_letters, "len": 10},
+        "int": {"dataRange": (0, 100)},
+        "float": {"dataRange": (0, 10000)},
+        "str": {"dataRange": string.ascii_letters, "len": 10},
         "list": {
-            "str": {"datarange": string.ascii_letters, "len": 10},
+            "str": {"dataRange": string.ascii_letters, "len": 10},
         },
         "tuple": {
-            "str": {"datarange": string.ascii_letters, "len": 10},
+            "str": {"dataRange": string.ascii_letters, "len": 10},
             "list": {
-                "int": {"datarange": (0, 10)},
-                "float": {"datarange": (0, 10000)}
+                "int": {"dataRange": (0, 10)},
+                "float": {"dataRange": (0, 10000)}
             },
             "dict": {
-                "str": {"datarange": string.ascii_letters, "len": 10},
-                "int": {"datarange": (0, 10)}
+                "str": {"dataRange": string.ascii_letters, "len": 10},
+                "int": {"dataRange": (0, 10)}
             }
         }
     }
@@ -103,4 +102,6 @@ def apply():
         if count >= 100000000:
             break
 
-apply()
+
+if __name__ == '__main__':
+    apply()
