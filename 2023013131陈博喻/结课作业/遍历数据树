@@ -1,0 +1,23 @@
+from lxml import etree
+from os import path
+from optparse import OptionParser
+
+xml_path = 'P00734.xml'
+tree = etree.parse(xml_path)
+tree_root = tree.getroot()
+tree_roots = [tree_root]
+def print_tree(elem):
+    elem.tag = etree.QName(elem.tag).localname
+    if len(elem):
+        print(f'\n{elem.tag}:')
+        for subelem in elem:
+            print_tree(subelem)
+    else:
+        if elem.attrib and not elem.text:
+            print(f'{elem.tag} {elem.attrib}')
+        elif elem.text and not elem.attrib:
+            print(f'{elem.tag}:{elem.text}')
+        else:
+            print(f'{elem.tag} {elem.attrib}:{elem.text}')
+for elem in tree_roots:
+    print_tree(elem)
