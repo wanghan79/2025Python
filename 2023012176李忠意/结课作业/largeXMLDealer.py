@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# coding:utf-8
-"""
-  Author:  H.Wang --<>
-  Purpose: To parse the large XML files more than 500M
-  Created: 4/4/2016
-"""
-
 from lxml import etree
 from os import path
 
