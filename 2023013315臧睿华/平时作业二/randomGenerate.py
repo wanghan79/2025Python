@@ -1,8 +1,11 @@
+# coding:utf-8
+"""
+  Author:  臧睿华
+  Purpose: 使用生成器生成随机样本
+  Created: 27/5/2025
+"""
 import random
 import string
-
-# 递归
-
 
 def structDataSampling(**kwargs):
     result = list()
@@ -14,14 +17,17 @@ def structDataSampling(**kwargs):
                 continue
             elif k == 'dict':
                 elem = dict()
-                elem[random.randint(0,10)] = random.randint(10, 50)
+                elem[random.randint(0, 10)] = random.randint(10, 50)
                 res.append(elem)
             elif k == 'list':
-                res.append(structDataSampling(**v))
+                # 对于列表类型，调用自身并收集结果
+                sublist = structDataSampling(**v)
+                for item in sublist:
+                    res.append(item)
             elif k == 'tuple':
-                res.append(
-                    tuple(structDataSampling(**v))
-                )
+                # 对于元组类型，同样调用自身并将结果转换为元组
+                subtuples = structDataSampling(**v)
+                res.append(tuple(subtuples))
             elif k == 'int':
                 it = iter(v['datarange'])
                 res.append(random.randint(next(it), next(it)))
@@ -35,65 +41,12 @@ def structDataSampling(**kwargs):
             else:
                 continue
             
-        result.append(res)
-    return result
-                       
-struct = {'num':3, 'tuple':{'str':{"datarange": string.ascii_uppercase, "len": 50}}, 'list':{'int':{"datarange": (0,10)}, 'float':{"datarange": (0, 1.0)}}, 'dict':{}}
-
-print(structDataSampling(**struct))
+        yield res
 
 
+struct = {'num': 3, 'tuple': {'str': {"datarange": string.ascii_uppercase, "len": 10}}, 
+          'list': {'num': 2, 'int': {"datarange": (0, 10)}, 'float': {"datarange": (0, 1.0)}}, 'dict': {}}
 
-
-
-
-# # 非递归  =>  栈实现
-
-# def ranGenerate(**kwargs):
-#     reslut = list()
-#     num = kwargs.get('num', 1)
-#     for index in range(num):
-#         res = list()
-#         stack = [(k, v) for k, v in kwargs.items() if k != 'num'] # 初始化栈
-#         while stack:
-#             key, value = stack.pop()
-            
-#             if key == 'dict':
-#                 elem = dict()
-#                 elem[random.randint(0,10)] = random.randint(10, 50)
-#                 res.append(elem)
-                
-#             elif key == 'list':
-#                 stack.extend([('list_item', v_item) for v_item in value.items()])
-                
-#             elif key == 'tuple':
-#                 stack.extend([('tuple_item', v_item) for v_item in value.items()])
-                
-#             elif key == 'int':
-#                 it = iter(value['datarange'])
-#                 res.append(random.randint(next(it), next(it)))
-                
-#             elif key == 'float':
-#                 it = iter(value['datarange'])
-#                 res.append(random.uniform(next(it), next(it)))
-                
-#             elif key == 'str':
-#                 datarange, length = value['datarange'], value['len']
-#                 s = ''.join(random.choice(datarange) for _ in range(length))
-#                 res.append(s)
-            
-#             elif key == 'list_item':
-#                 stack.append((value[0], value[1]))
-            
-#             elif key == 'tuple_item':
-#                 stack.append((value[0], value[1]))
-                
-#         reslut.append(res)
-#     return reslut
-
-
-
-
-# struct = {'num':3, 'tuple':{'str':{"datarange": string.ascii_uppercase, "len": 50}}, 'list':{'int':{"datarange": (0,10)}, 'float':{"datarange": (0, 1.0)}}, 'dict':{}}
-
-# print(structDataSampling(**struct))
+# 调用函数
+for sample in structDataSampling(**struct):
+    print(sample)
