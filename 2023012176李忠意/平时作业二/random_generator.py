@@ -16,16 +16,8 @@ def dataSampling(**kwargs):
                 s = value['datarange']
                 length = value['len']
                 res.append(''.join(random.choices(s, k=length)))
-            elif key == 'tuple':
-                inner = next(dataSampling(**value))
-                res.append(tuple(inner))
-            elif key == 'list':
-                inner = next(dataSampling(**value))
-                res.append(list(inner))
-            elif key == 'dict':
-                inner = next(dataSampling(**value))
-                # res.append({str(i): v for i, v in enumerate(inner)})
-                res.append(inner if isinstance(inner, dict) else {str(i): v for i, v in enumerate(inner)})
+            else:
+                res.append(list(next(dataSampling(**value))))
 
         yield res
 
