@@ -1,3 +1,9 @@
+# coding:utf-8
+"""
+  Author:  臧睿华
+  Purpose: 使用带参修饰器实现对随机样本生成函数的统计操作修饰
+  Created: 27/5/2025
+"""
 import random
 import string
 
