@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding:utf-8
-
 import sys
 from largeXMLDealer import largeXMLDealer
 @largeXMLDealer(sys.argv[1], sys.argv[2])
