@@ -25,7 +25,6 @@ class largeXMLDealer:
         context = etree.iterparse(fileName, events=es, tag=ns + elemTag)
 
         for event, elem in context:
-            # Call the outside function to deal with the element here
             try:
                 func4Element(elem)
             except Exception:
@@ -36,7 +35,6 @@ class largeXMLDealer:
                 while elem.getprevious() is not None:
                     del elem.getparent()[0]
         del context
-        # Return how many elements had been parsed
         return count
 
     def _getNamespace(self, fileName):
