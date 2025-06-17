@@ -1,0 +1,48 @@
+<!<?xml version="1.0" encoding="UTF-8"?>
+<uniprot xmlns="http://uniprot.org/uniprot" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd">
+  <entry dataset="Swiss-Prot" created="1986-07-21" modified="2023-11-15" version="250">
+    <accession>P00734</accession>
+    <accession>B2R7F7</accession>
+    <accession>B4E1A7</accession>
+    
+    <name>F7_HUMAN</name>
+    <protein>
+      <recommendedName>
+        <fullName>Coagulation factor VII</fullName>
+        <ecNumber>3.4.21.21</ecNumber>
+      </recommendedName>
+    </protein>
+    
+    <gene>
+      <name>F7</name>
+    </gene>
+    
+    <sequence length="466" mass="51840" checksum="B0F4A8A1B0F4A8A1">
+MAHVRGLQLPGCLALAALCSLVHSQHVFLAPQQARSLLQRVRRANTFLEEVRKGNLEREC
+VEETCSYEEAFEALESSTATDVFWAKYTACETARTPRDKLAACLEGNCAEGLGTNYRGHV
+NITRSGIECQLWRSRYPHKPEINSTTHPGADLQENFCRNPDSSTTGPWCYTTDPTVRRQE
+CSIPVCGQDQVTVAMTPRSEGSSVNLSPPLEQCVPDRGQQYQGRLAVTTHGLPCLAWASA
+QAKALSKHQDFNSAVQLVENFCRNPDGDEEGVWCYVAGKPGDFGYCDLNYCEEAVEEETG
+DGLDEDSDRAIEGRTATSEYQTFFNPRTFGSGEADCGLRPLFEKKSLEDKTERELLESYI
+DGRIVEGSDAEIGMSPWQVMLFRKSPQELLCGASLISDRWVLTAAHCLLYPPWDKNFTEN
+DLLVRIGKHSRTRYERNIEKISMLEKIYIHPRYNWRENLDRDIALMKLKKPVAFSDYIHP
+VCLPDRETAASLLQAGYKGRVTGWGNLKETWTANVGKGQPSVLQVVNLPIVERPVCKDST
+RIRITDNMFCAGYKPDEGKRGDACEGDSGGPFVMKSPFNNRWYQMGIVSWGEGCDRDGKY
+GFYTHVFRLKKWIQKVIDQFGE
+    </sequence>
+    
+    <feature type="chain" description="Coagulation factor VIIa heavy chain">
+      <location>
+        <position position="1"/>
+        <position position="152"/>
+      </location>
+    </feature>
+    
+    <feature type="chain" description="Coagulation factor VIIa light chain">
+      <location>
+        <position position="153"/>
+        <position position="466"/>
+      </location>
+    </feature>
+  </entry>
+</uniprot>-- 这是一个空文件，可以在这里编写你的代码。 -->
