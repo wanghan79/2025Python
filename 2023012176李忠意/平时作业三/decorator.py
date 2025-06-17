@@ -11,17 +11,9 @@ def StaticRes(*stats_args):
                 numeric_values = []
                 if isinstance(data, (int, float)):
                     numeric_values.append(data)
-                elif isinstance(data, str):
-                    try:
-                        numeric_values.append(float(data))
-                    except ValueError:
-                        pass
-                elif isinstance(data, (list, tuple)):
+                elif isinstance(data, list):
                     for item in data:
                         numeric_values.extend(flatten(item))
-                elif isinstance(data, dict):
-                    for value in data.values():
-                        numeric_values.extend(flatten(value))
                 return numeric_values
 
             data_generator = func(*args, **kwargs)
@@ -58,16 +50,8 @@ def dataSampling(**kwargs):
                 s = value['datarange']
                 length = value['len']
                 res.append(''.join(random.choices(s, k=length)))
-            elif key == 'tuple':
-                inner = next(dataSampling(**value))
-                res.append(tuple(inner))
-            elif key == 'list':
-                inner = next(dataSampling(**value))
-                res.append(list(inner))
-            elif key == 'dict':
-                inner = next(dataSampling(**value))
-                # res.append({str(i): v for i, v in enumerate(inner)})
-                res.append(inner if isinstance(inner, dict) else {str(i): v for i, v in enumerate(inner)})
+            else:
+                res.append(list(next(dataSampling(**value))))
         yield res
 
 @StaticRes('SUM', 'AVG', 'MAX', 'MIN')
