@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+# coding:utf-8
+
+# !/usr/bin/env python
+# coding:utf-8
+
+from largeXMLDealer import XMLParserDecorator
+import sys
+
+
+@XMLParserDecorator("accession")
+def dealwith_element(elem):
+    print(elem.text.strip())
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python callDealer.py <filename.xml> <tag>")
+        sys.exit(1)
+
+    filename = sys.argv[1]
+    tag = sys.argv[2]
+
+    @XMLParserDecorator(tag)
+    def dealwith_element(elem):
+        print(elem.text.strip())
+
+    count = dealwith_element(filename)
+
+
+
+
+'''
+CALL EXAMPLE 1:
+COMMAND LINE:     python3 callDealer.py P00734.xml accession
+OUTPUT:           
+P00734
+B2R7F7
+B4E1A7
+Q4QZ40
+Q53H04
+Q53H06
+Q69EZ7
+Q7Z7P3
+Q9UCA1+
+Already parsed 9 XML elements.          
+
+
+CALL EXAMPLE 2:
+COMMAND LINE:     python3 callDealer.py P00734.xml sequence
+OUTPUT:           
+MAHVRGLQLPGCLALAALCSLVHSQHVFLAPQQARSLLQRVRRANTFLEEVRKGNLEREC
+VEETCSYEEAFEALESSTATDVFWAKYTACETARTPRDKLAACLEGNCAEGLGTNYRGHV
+NITRSGIECQLWRSRYPHKPEINSTTHPGADLQENFCRNPDSSTTGPWCYTTDPTVRRQE
+CSIPVCGQDQVTVAMTPRSEGSSVNLSPPLEQCVPDRGQQYQGRLAVTTHGLPCLAWASA
+QAKALSKHQDFNSAVQLVENFCRNPDGDEEGVWCYVAGKPGDFGYCDLNYCEEAVEEETG
+DGLDEDSDRAIEGRTATSEYQTFFNPRTFGSGEADCGLRPLFEKKSLEDKTERELLESYI
+DGRIVEGSDAEIGMSPWQVMLFRKSPQELLCGASLISDRWVLTAAHCLLYPPWDKNFTEN
+DLLVRIGKHSRTRYERNIEKISMLEKIYIHPRYNWRENLDRDIALMKLKKPVAFSDYIHP
+VCLPDRETAASLLQAGYKGRVTGWGNLKETWTANVGKGQPSVLQVVNLPIVERPVCKDST
+RIRITDNMFCAGYKPDEGKRGDACEGDSGGPFVMKSPFNNRWYQMGIVSWGEGCDRDGKY
+GFYTHVFRLKKWIQKVIDQFGE
+
+Already parsed 1 XML elements.
+'''
