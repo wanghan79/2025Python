@@ -1,47 +1,46 @@
-from functools import wraps
-import xml.sax
+import sys
+from lxml import etree
+from os import path
 
-def parse_xml(file_path):
+def xml_parser_decorator(elem_tag):
     def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            class XMLHandler(xml.sax.ContentHandler):
-                def __init__(self):
-                    self.current_data = ""
-                    self.content = ""
-                    self.data_dict = {}
-
-                def startElement(self, tag, attributes):
-                    self.current_data = tag
-                    self.content = ""
-
-                def characters(self, content):
-                    if self.current_data:
-                        self.content += content.strip()
-
-                def endElement(self, tag):
-                    if self.current_data and self.content:
-                        self.data_dict[self.current_data] = self.content
-                    if tag == "root":
-                        func(self.data_dict, *args, **kwargs)
-                        self.data_dict = {}
-
-            parser = xml.sax.make_parser()
-            parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-            handler = XMLHandler()
-            parser.setContentHandler(handler)
-            parser.parse(file_path)
+        def wrapper(file_name):
+            if not path.isfile(file_name) or not file_name.endswith("xml"):
+                raise FileNotFoundError
+            
+            count = 0
+            ns = ""
+            try:
+                context = etree.iterparse(file_name, events=('start-ns',))
+                for event, elem in context:
+                    ns = elem[1]
+                    break
+            except:
+                ns = ""
+            
+            full_tag = f"{{{ns}}}{elem_tag}" if ns else elem_tag
+            context = etree.iterparse(file_name, events=('end',), tag=full_tag)
+            
+            for event, elem in context:
+                try:
+                    func(elem)
+                finally:
+                    elem.clear()
+                    count += 1
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
+            del context
+            print(f"Already parsed {count} XML elements.")
         return wrapper
     return decorator
 
-@parse_xml(r"C:\P00734.xml")
-def callDealer(data):
-    if data:
-        print("解析结果：")
-        for key, value in data.items():
-            print(f"{key}: {value}")
+@xml_parser_decorator(elem_tag=sys.argv[2])
+def print_element_text(elem):
+    if isinstance(elem, object) and elem.text:
+        print(elem.text.strip())
 
 if __name__ == "__main__":
-    print("开始解析XML文件...")
-    callDealer()
-    print("解析完成")
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <xml_file> <element_tag>")
+        sys.exit(1)
+    print_element_text(sys.argv[1])
