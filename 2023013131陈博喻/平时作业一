@@ -1,0 +1,139 @@
+import sys
+import os
+'''#安全序列
+max = [[7, 5, 3],
+    [3, 2, 2],
+    [9, 0, 2],
+    [2, 2, 2]]
+allocation = [[0, 1, 0],
+    [2, 0, 0],
+    [3, 0, 2],
+    [2, 1, 1]]
+need = [[7,4,3],
+        [1,2,2],
+        [6,0,0],
+        [0,1,1]]1
+available = [10,5,7]
+n = 4
+m = 3
+
+#不安全序列
+available = [1, 1, 2]
+max = [
+    [3, 2, 2],
+    [2, 1, 3],
+    [1, 3, 2]
+]
+allocation = [
+    [1, 0, 0],
+    [0, 1, 1],
+    [0, 0, 1]
+]
+need = [[2,2,2],
+        [2,0,2],
+        [1,3,1]]
+n = 3
+m = 3
+'''
+n = int(input('请输入进程数：'))
+m = int(input('请输入资源个数：'))
+max = []
+allocation = []
+need = []
+available = []
+for i in range(n):
+    temp = []
+    for j in range(m):
+         print(f'请输入进程{i}所需要的资源{j+1}数：')
+         k = int(input())
+         temp.append(k)
+    max.append(temp)
+for i in range(n):
+    temp = []
+    for j in range(m):
+         print(f'请输入进程{i}所分配的资源{j+1}数：')
+         k = int(input())
+         temp.append(k)
+    allocation.append(temp)
+for j in range(m):
+    k = int(input(f'请输入剩余资源{j+1}数：'))
+    available.append(k)
+for i in range(n):
+    temp = []
+    for j in range(m):
+        k = max[i][j] - allocation[i][j]
+        temp.append(k)
+    need.append(temp)
+
+def is_safe(n,m):
+    while 1:
+        request = []
+        i = int(input('请输入进程代号(退出进程请输入-1):'))
+        if i == -1:
+            break
+        for j in range(m):
+            k = int(input(f'请输入请求的资源{j + 1}数:'))
+            request.append(k)
+        safe1 = True
+        for j in range(m):
+            if need[i][j] < request[j]:
+                safe1 = False
+                break
+            elif available[j] < request[j]:
+                safe1 = False
+                break
+        if not safe1:
+            request.clear()
+            print('出现错误！')
+            continue
+        for j in range(m):
+            allocation[i][j] += request[j]
+            need[i][j] -= request[j]
+            available[j] -= request[j]
+        al = []
+        ne = []
+        av = []
+        for j in range(n):
+            al.append(allocation[j])
+            ne.append(need[j])
+        for j in range(m):
+            av.append(available[j])
+        finished = []
+        for i in range(n):
+            finished.append(False)
+        safe2 = False
+        count = 0
+        work = []
+        while count < n * (n + 1) // 2:
+            for j in range(n):
+                if not finished[j]:
+                    break
+            if j == n - 1:
+                safe2 = True
+                break
+            k = count % n
+            if finished[k]:
+                count += 1
+                continue
+            safe3 = True
+            for j in range(m):
+                if ne[k][j] > av[j]:
+                     safe3 = False
+                     break
+            if not safe3:
+                count += 1
+                continue
+            else:
+                for j in range(m):
+                    av[j] += al[k][j]
+                work.append(k)
+                finished[k] = True
+        if safe2:
+            print(f'max={max}\nallocation={allocation}\nneed={need}\navailable={available}')
+        else:
+            print('会产生不安全序列')
+            for j in range(m):
+                allocation[i][j] += request[j]
+                need[i][j] -= request[j]
+                available[j] -= request[j]
+is_safe(n,m)
