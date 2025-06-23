@@ -1,0 +1,114 @@
+import random
+from typing import Generator, Union, List, Dict, Any
+
+def random_sample_generator(
+    num_samples: int = 100,
+    sample_structure: Union[Dict[str, Any], List[Dict[str, Any]]] = None
+) -> Generator[Dict[str, Any], None, None]:
+    """
+    生成随机样本的生成器
+    
+    参数:
+        num_samples: 要生成的样本数量
+        sample_structure: 定义样本结构的字典或字典列表
+            - 如果是字典: 所有样本使用相同的结构
+            - 如果是字典列表: 每个样本使用列表中的对应结构
+    
+    返回:
+        生成器，每次产生一个包含随机数据的样本字典
+    """
+    if sample_structure is None:
+        # 默认样本结构
+        sample_structure = {
+            "id": ("int", 1, 1000),
+            "name": ("choice", ["Alice", "Bob", "Charlie", "David", "Eve"]),
+            "age": ("int", 18, 65),
+            "income": ("float", 20000.0, 150000.0),
+            "is_active": ("bool",),
+            "interests": ("list", 3, ["sports", "music", "reading", "travel", "cooking"])
+        }
+    
+    # 如果是单个字典结构，转换为列表
+    if isinstance(sample_structure, dict):
+        sample_structure = [sample_structure] * num_samples
+    
+    # 确保结构列表长度与样本数量匹配
+    if len(sample_structure) < num_samples:
+        sample_structure = sample_structure * (num_samples // len(sample_structure) + 1
+    sample_structure ) = sample_structure[:num_samples]
+    
+    # 生成样本
+    for i, structure in enumerate(sample_structure):
+        sample = {}
+        for field, spec in structure.items():
+            data_type = spec[0]
+            
+            if data_type == "int":
+                # 整型: ("int", min, max)
+                sample[field] = random.randint(spec[1], spec[2])
+            
+            elif data_type == "float":
+                # 浮点型: ("float", min, max)
+                sample[field] = random.uniform(spec[1], spec[2])
+            
+            elif data_type == "bool":
+                # 布尔型: ("bool",)
+                sample[field] = random.choice([True, False])
+            
+            elif data_type == "choice":
+                # 选择型: ("choice", [option1, option2, ...])
+                sample[field] = random.choice(spec[1])
+            
+            elif data_type == "list":
+                # 列表型: ("list", length, [options])
+                length = spec[1]
+                options = spec[2]
+                sample[field] = random.choices(options, k=length)
+            
+            elif data_type == "norm":
+                # 正态分布: ("norm", mean, std_dev)
+                sample[field] = random.gauss(spec[1], spec[2])
+            
+            else:
+                raise ValueError(f"不支持的数据类型: {data_type}")
+        
+        yield sample
+
+
+# 使用示例
+if __name__ == "__main__":
+    # 定义自定义样本结构
+    custom_structure = [
+        # 第一个样本结构
+        {
+            "user_id": ("int", 1000, 9999),
+            "username": ("choice", ["john_doe", "jane_smith", "admin", "guest"]),
+            "score": ("float", 0.0, 10.0),
+            "premium": ("bool",),
+            "tags": ("list", 2, ["tech", "science", "art", "business"])
+        },
+        # 第二个样本结构
+        {
+            "product_id": ("int", 1, 100),
+            "product_name": ("choice", ["Laptop", "Phone", "Tablet", "Monitor"]),
+            "price": ("float", 99.99, 1999.99),
+            "in_stock": ("bool",),
+            "rating": ("norm", 4.5, 0.5)
+        }
+    ]
+    
+    # 创建生成器 - 生成5个样本，交替使用两种结构
+    sample_gen = random_sample_generator(
+        num_samples=5,
+        sample_structure=custom_structure
+    )
+    
+    # 使用生成器
+    print("生成的随机样本:")
+    for i, sample in enumerate(sample_gen):
+        print(f"\n样本 {i+1}:")
+        for key, value in sample.items():
+            if isinstance(value, float):
+                print(f"  {key}: {value:.2f}")  # 格式化浮点数
+            else:
+                print(f"  {key}: {value}")
