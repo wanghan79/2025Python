@@ -1,0 +1,117 @@
+import xml.etree.ElementTree as ET
+from functools import wraps
+import os
+
+def xml_parser_decorator(xml_path, chunk_size=1000, encoding='utf-8'):
+    """
+    XML大文件解析修饰器，用于修饰数据打印函数
+    参数:
+        xml_path: XML文件路径
+        chunk_size: 每次解析的元素数量
+        encoding: 文件编码
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 检查文件是否存在
+            if not os.path.exists(xml_path):
+                print(f"错误: 文件 {xml_path} 不存在")
+                return
+            
+            # 获取根元素标签名（假设XML只有一种主要元素）
+            root_tag = None
+            with open(xml_path, 'r', encoding=encoding) as f:
+                for line in f:
+                    if line.strip().startswith('<'):
+                        root_tag = line.strip()[1:].split(' ')[0]
+                        if root_tag.startswith('/'):
+                            root_tag = None
+                        else:
+                            break
+                if not root_tag:
+                    print("错误: 无法识别XML根元素")
+                    return
+            
+            # 创建迭代解析器
+            context = ET.iterparse(xml_path, events=('start', 'end'), encoding=encoding)
+            
+            # 跳过根元素的start事件
+            event, root = next(context)
+            
+            # 存储当前元素和计数
+            current_elements = []
+            element_count = 0
+            
+            print(f"开始解析XML文件: {xml_path}")
+            print(f"解析参数: 块大小={chunk_size}, 编码={encoding}")
+            
+            try:
+                # 流式解析XML
+                for event, elem in context:
+                    if event == 'end' and elem.tag == root_tag:
+                        # 保存当前元素
+                        current_elements.append(elem)
+                        element_count += 1
+                        
+                        # 达到块大小时，调用被修饰函数处理
+                        if element_count % chunk_size == 0:
+                            print(f"\n处理第 {element_count - chunk_size + 1} 到 {element_count} 个元素")
+                            func(current_elements, *args, **kwargs)
+                            current_elements = []  # 清空已处理元素
+                        
+                        # 释放元素内存
+                        elem.clear()
+                
+                # 处理剩余元素
+                if current_elements:
+                    print(f"\n处理剩余 {len(current_elements)} 个元素")
+                    func(current_elements, *args, **kwargs)
+                
+                print(f"\n解析完成，共处理 {element_count} 个元素")
+                
+            except ET.ParseError as e:
+                print(f"解析错误: {e}")
+            except Exception as e:
+                print(f"处理过程中发生错误: {e}")
+            finally:
+                # 清理根元素
+                root.clear()
+            
+        return wrapper
+    return decorator
+
+# 示例数据打印函数
+def print_xml_data(elements, print_limit=5):
+    """打印XML元素数据"""
+    print(f"元素数量: {len(elements)}")
+    for i, elem in enumerate(elements, 1):
+        if i <= print_limit:
+            print(f"\n元素 {i}:")
+            for child in elem:
+                print(f"  {child.tag}: {child.text.strip() if child.text else '无内容'}")
+        else:
+            break
+    if len(elements) > print_limit:
+        print(f"... 省略 {len(elements) - print_limit} 个元素")
+
+# 使用示例
+if __name__ == "__main__":
+    # 假设存在一个books.xml文件，结构如下:
+    # <books>
+    #   <book>
+    #     <title>书名</title>
+    #     <author>作者</author>
+    #     <price>价格</price>
+    #   </book>
+    #   ...
+    # </books>
+    
+    xml_file = "books.xml"  # 替换为实际文件路径
+    
+    # 使用修饰器装饰打印函数
+    @xml_parser_decorator(xml_file, chunk_size=2)
+    def process_books(elements):
+        print_xml_data(elements)
+    
+    # 调用修饰后的函数
+    process_books()
