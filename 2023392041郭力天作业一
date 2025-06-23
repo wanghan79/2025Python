@@ -1,0 +1,138 @@
+import numpy as np
+
+def banker_algorithm(Max, Allocated, Available, Request, process_id):
+    """
+    银行家算法实现
+    参数:
+        Max: 最大需求矩阵 (二维数组)
+        Allocated: 已分配矩阵 (二维数组)
+        Available: 可用资源向量 (一维数组)
+        Request: 进程请求资源向量 (一维数组)
+        process_id: 请求资源的进程ID
+    返回:
+        分配是否成功, 分配后的四个矩阵
+    """
+    # 转换为numpy数组以便操作
+    Max = np.array(Max, dtype=int)
+    Allocated = np.array(Allocated, dtype=int)
+    Available = np.array(Available, dtype=int)
+    Request = np.array(Request, dtype=int)
+    
+    # 复制当前状态用于检查
+    temp_available = Available.copy()
+    temp_allocated = Allocated.copy()
+    temp_need = Max - Allocated
+    
+    # 步骤1: 检查请求是否超过需求
+    if np.any(Request > temp_need[process_id]):
+        print(f"错误: 进程{process_id}的请求超过声明的最大需求")
+        return False, Max, Allocated, Available, temp_need
+    
+    # 步骤2: 检查请求是否超过可用资源
+    if np.any(Request > temp_available):
+        print(f"错误: 进程{process_id}的请求超过系统可用资源，需要等待")
+        return False, Max, Allocated, Available, temp_need
+    
+    # 步骤3: 尝试分配资源
+    temp_allocated[process_id] += Request
+    temp_available -= Request
+    temp_need[process_id] -= Request
+    
+    # 步骤4: 检查分配后系统是否安全
+    is_safe, safe_sequence = is_safe_state(Max, temp_allocated, temp_available)
+    
+    if is_safe:
+        print(f"系统处于安全状态，资源可以分配给进程{process_id}")
+        print(f"安全序列: {safe_sequence}")
+        return True, Max, temp_allocated, temp_available, temp_need
+    else:
+        print(f"系统处于不安全状态，拒绝分配资源给进程{process_id}")
+        return False, Max, Allocated, Available, temp_need
+
+def is_safe_state(Max, Allocated, Available):
+    """检查系统是否处于安全状态"""
+    n_processes = Allocated.shape[0]  # 进程数
+    n_resources = Available.shape[0]  # 资源类型数
+    
+    # 计算需求矩阵
+    Need = Max - Allocated
+    
+    # 工作向量，初始为可用资源
+    Work = Available.copy()
+    
+    # 完成向量，标记进程是否完成
+    Finish = [False] * n_processes
+    
+    # 安全序列
+    safe_sequence = []
+    
+    # 查找满足条件的进程
+    while not all(Finish):
+        found = False
+        for i in range(n_processes):
+            if not Finish[i] and np.all(Need[i] <= Work):
+                # 进程i可以获取所需资源并完成
+                Work += Allocated[i]
+                Finish[i] = True
+                safe_sequence.append(i)
+                found = True
+                break
+        
+        # 如果没有找到可以完成的进程，系统不安全
+        if not found:
+            return False, []
+    
+    return True, safe_sequence
+
+# 示例使用
+if __name__ == "__main__":
+    # 示例数据
+    # Max矩阵: 5个进程, 3种资源
+    Max = [
+        [7, 5, 3],  # 进程0
+        [3, 2, 2],  # 进程1
+        [9, 0, 2],  # 进程2
+        [2, 2, 2],  # 进程3
+        [4, 3, 3]   # 进程4
+    ]
+    
+    Allocated = [
+        [0, 1, 0],  # 进程0
+        [2, 0, 0],  # 进程1
+        [3, 0, 2],  # 进程2
+        [2, 1, 1],  # 进程3
+        [0, 0, 2]   # 进程4
+    ]
+    
+    Available = [3, 3, 2]  # 可用资源
+    
+    # 计算Need矩阵
+    Need = np.array(Max) - np.array(Allocated)
+    
+    print("初始系统状态:")
+    print(f"Max矩阵:\n{Max}")
+    print(f"Allocated矩阵:\n{Allocated}")
+    print(f"Need矩阵:\n{Need.tolist()}")
+    print(f"Available向量:\n{Available}")
+    
+    # 检查初始状态是否安全
+    is_safe, sequence = is_safe_state(Max, Allocated, Available)
+    if is_safe:
+        print(f"初始状态安全，安全序列: {sequence}")
+    else:
+        print("初始状态不安全")
+    
+    # 模拟进程1请求资源 [1, 0, 2]
+    process_id = 1
+    Request = [1, 0, 2]
+    print(f"\n进程{process_id}请求资源: {Request}")
+    success, Max_result, Allocated_result, Available_result, Need_result = banker_algorithm(
+        Max, Allocated, Available, Request, process_id
+    )
+    
+    if success:
+        print("\n分配后系统状态:")
+        print(f"Max矩阵:\n{Max_result}")
+        print(f"Allocated矩阵:\n{Allocated_result.tolist()}")
+        print(f"Need矩阵:\n{Need_result.tolist()}")
+        print(f"Available向量:\n{Available_result.tolist()}")
