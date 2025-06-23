@@ -1,0 +1,145 @@
+import random
+import string
+import numpy as np
+
+def random_sample_generator(sample_structure, num_samples):
+    """
+    通用随机样本生成器
+    参数:
+        sample_structure: 样本结构定义，字典格式，示例:
+            {
+                "id": {"type": "int", "range": (1, 1000)},
+                "name": {"type": "str", "length": (5, 10)},
+                "score": {"type": "float", "range": (0, 100)},
+                "is_active": {"type": "bool"}
+            }
+        num_samples: 生成的样本数量
+    返回:
+        生成器对象，每次迭代返回一个随机样本
+    """
+    # 检查输入有效性
+    if not isinstance(sample_structure, dict) or num_samples <= 0:
+        raise ValueError("输入参数无效，请检查样本结构和数量")
+    
+    for _ in range(num_samples):
+        sample = {}
+        for field, config in sample_structure.items():
+            field_type = config.get("type")
+            if field_type == "int":
+                min_val, max_val = config.get("range", (0, 100))
+                sample[field] = random.randint(min_val, max_val)
+            elif field_type == "float":
+                min_val, max_val = config.get("range", (0.0, 100.0))
+                sample[field] = random.uniform(min_val, max_val)
+            elif field_type == "str":
+                min_len, max_len = config.get("length", (5, 10))
+                length = random.randint(min_len, max_len)
+                sample[field] = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+            elif field_type == "bool":
+                sample[field] = random.choice([True, False])
+            elif field_type == "array":
+                element_type = config.get("element_type", "int")
+                min_len, max_len = config.get("length", (1, 10))
+                length = random.randint(min_len, max_len)
+                sample[field] = generate_array(element_type, length, config)
+            elif field_type == "nested_dict":
+                nested_structure = config.get("structure", {})
+                sample[field] = generate_nested_dict(nested_structure)
+            else:
+                # 默认为None或自定义类型
+                sample[field] = None
+        yield sample
+
+def generate_array(element_type, length, config):
+    """生成指定类型的数组"""
+    array = []
+    for _ in range(length):
+        if element_type == "int":
+            min_val, max_val = config.get("range", (0, 100))
+            array.append(random.randint(min_val, max_val))
+        elif element_type == "float":
+            min_val, max_val = config.get("range", (0.0, 100.0))
+            array.append(random.uniform(min_val, max_val))
+        elif element_type == "str":
+            min_len, max_len = config.get("length", (5, 10))
+            str_len = random.randint(min_len, max_len)
+            array.append(''.join(random.choices(string.ascii_letters + string.digits, k=str_len)))
+    return array
+
+def generate_nested_dict(structure):
+    """生成嵌套字典"""
+    nested_dict = {}
+    for field, config in structure.items():
+        field_type = config.get("type")
+        if field_type == "int":
+            min_val, max_val = config.get("range", (0, 100))
+            nested_dict[field] = random.randint(min_val, max_val)
+        elif field_type == "float":
+            min_val, max_val = config.get("range", (0.0, 100.0))
+            nested_dict[field] = random.uniform(min_val, max_val)
+        elif field_type == "str":
+            min_len, max_val = config.get("length", (5, 10))
+            str_len = random.randint(min_len, max_val)
+            nested_dict[field] = ''.join(random.choices(string.ascii_letters + string.digits, k=str_len))
+        elif field_type == "array":
+            element_type = config.get("element_type", "int")
+            min_len, max_len = config.get("length", (1, 10))
+            length = random.randint(min_len, max_len)
+            nested_dict[field] = generate_array(element_type, length, config)
+        elif field_type == "nested_dict":
+            nested_structure = config.get("structure", {})
+            nested_dict[field] = generate_nested_dict(nested_structure)
+    return nested_dict
+
+# 使用示例
+if __name__ == "__main__":
+    # 示例1: 生成简单结构的样本
+    simple_structure = {
+        "user_id": {"type": "int", "range": (1000, 9999)},
+        "username": {"type": "str", "length": (6, 12)},
+        "age": {"type": "int", "range": (18, 60)},
+        "is_vip": {"type": "bool"},
+        "score": {"type": "float", "range": (0, 100)}
+    }
+    
+    print("生成简单结构样本:")
+    for i, sample in enumerate(random_sample_generator(simple_structure, 3), 1):
+        print(f"样本 {i}: {sample}")
+    
+    # 示例2: 生成包含数组和嵌套字典的复杂结构样本
+    complex_structure = {
+        "order_id": {"type": "int", "range": (10000, 99999)},
+        "customer_info": {
+            "type": "nested_dict",
+            "structure": {
+                "name": {"type": "str", "length": (2, 8)},
+                "phone": {"type": "str", "length": (11, 11)},
+                "address": {
+                    "type": "nested_dict",
+                    "structure": {
+                        "province": {"type": "str", "length": (2, 4)},
+                        "city": {"type": "str", "length": (2, 4)},
+                        "detail": {"type": "str", "length": (10, 50)}
+                    }
+                }
+            }
+        },
+        "products": {
+            "type": "array",
+            "element_type": "nested_dict",
+            "length": (1, 5),
+            "structure": {
+                "product_id": {"type": "int", "range": (100, 999)},
+                "name": {"type": "str", "length": (5, 20)},
+                "price": {"type": "float", "range": (10, 1000)},
+                "quantity": {"type": "int", "range": (1, 10)}
+            }
+        },
+        "total_amount": {"type": "float", "range": (10, 5000)}
+    }
+    
+    print("\n生成复杂结构样本:")
+    for i, sample in enumerate(random_sample_generator(complex_structure, 2), 1):
+        print(f"样本 {i}:")
+        for key, value in sample.items():
+            print(f"  {key}: {value}")
