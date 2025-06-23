@@ -1,0 +1,120 @@
+import random
+import string
+from functools import wraps
+
+def statistics_decorator(*operations):
+    """
+    带参修饰器，用于对随机样本生成函数进行统计操作
+    参数:
+        *operations: 统计操作列表，支持'SUM', 'AVG', 'MAX', 'MIN'
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 调用原始函数生成随机样本
+            samples = list(func(*args, **kwargs))
+            
+            # 如果没有样本，直接返回
+            if not samples:
+                print("没有生成样本，无法进行统计")
+                return samples
+            
+            # 提取所有字段名
+            field_names = set()
+            for sample in samples:
+                field_names.update(sample.keys())
+            field_names = sorted(field_names)
+            
+            # 对每个字段进行指定的统计操作
+            stats_results = {}
+            for field in field_names:
+                # 提取该字段的所有数值
+                values = []
+                for sample in samples:
+                    if field in sample and isinstance(sample[field], (int, float)):
+                        values.append(sample[field])
+                
+                # 跳过没有数值的字段
+                if not values:
+                    continue
+                
+                # 执行统计操作
+                field_stats = {}
+                for op in operations:
+                    if op == 'SUM':
+                        field_stats[op] = sum(values)
+                    elif op == 'AVG':
+                        field_stats[op] = sum(values) / len(values)
+                    elif op == 'MAX':
+                        field_stats[op] = max(values)
+                    elif op == 'MIN':
+                        field_stats[op] = min(values)
+                
+                if field_stats:
+                    stats_results[field] = field_stats
+            
+            # 输出统计结果
+            print("\n统计结果:")
+            for field, stats in stats_results.items():
+                print(f"字段 '{field}':")
+                for op, result in stats.items():
+                    print(f"  {op}: {result:.2f}" if isinstance(result, float) else f"  {op}: {result}")
+            
+            return samples
+        return wrapper
+    return decorator
+
+def random_sample_generator(sample_structure, num_samples):
+    """随机样本生成函数"""
+    for _ in range(num_samples):
+        sample = {}
+        for field, config in sample_structure.items():
+            field_type = config.get("type")
+            if field_type == "int":
+                min_val, max_val = config.get("range", (0, 100))
+                sample[field] = random.randint(min_val, max_val)
+            elif field_type == "float":
+                min_val, max_val = config.get("range", (0.0, 100.0))
+                sample[field] = random.uniform(min_val, max_val)
+            elif field_type == "str":
+                min_len, max_len = config.get("length", (5, 10))
+                length = random.randint(min_len, max_len)
+                sample[field] = ''.join(random.choices(string.ascii_letters, k=length))
+        yield sample
+
+# 使用示例
+if __name__ == "__main__":
+    # 定义样本结构
+    sample_structure = {
+        "id": {"type": "int", "range": (1, 100)},
+        "score": {"type": "float", "range": (0, 100)},
+        "age": {"type": "int", "range": (18, 60)},
+        "name": {"type": "str", "length": (5, 10)}
+    }
+    
+    # 示例1: 使用单个统计操作 - SUM
+    @statistics_decorator('SUM')
+    def generate_samples_sum():
+        return random_sample_generator(sample_structure, 10)
+    
+    print("示例1: 统计SUM")
+    samples_sum = list(generate_samples_sum())
+    print(f"\n生成的样本数量: {len(samples_sum)}")
+    
+    # 示例2: 使用多个统计操作 - AVG和MAX
+    @statistics_decorator('AVG', 'MAX')
+    def generate_samples_avg_max():
+        return random_sample_generator(sample_structure, 15)
+    
+    print("\n示例2: 统计AVG和MAX")
+    samples_avg_max = list(generate_samples_avg_max())
+    print(f"\n生成的样本数量: {len(samples_avg_max)}")
+    
+    # 示例3: 使用所有统计操作 - SUM, AVG, MAX, MIN
+    @statistics_decorator('SUM', 'AVG', 'MAX', 'MIN')
+    def generate_samples_all():
+        return random_sample_generator(sample_structure, 20)
+    
+    print("\n示例3: 统计SUM, AVG, MAX, MIN")
+    samples_all = list(generate_samples_all())
+    print(f"\n生成的样本数量: {len(samples_all)}")
