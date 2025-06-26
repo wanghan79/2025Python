@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uniprot xmlns="http://uniprot.org/uniprot">
+  <entry>
+    <accession>P00734</accession>
+    <name>THRB_HUMAN</name>
+    <protein>
+      <recommendedName>
+        <fullName>Prothrombin</fullName>
+      </recommendedName>
+    </protein>
+    <organism>
+      <name type="scientific">Homo sapiens</name>
+    </organism>
+    <gene>
+      <name>F2</name>
+    </gene>
+    <feature type="DOMAIN">
+      <description>Kringle 1</description>
+    </feature>
+    <feature type="DOMAIN">
+      <description>Kringle 2</description>
+    </feature>
+    <feature type="SITE">
+      <description>Active site</description>
+    </feature>
+    <reference>
+      <citation name="Prothrombin structure and function">
+        <title>Structure and function of human prothrombin</title>
+        <authorList>
+          <person name="Smith J."/>
+          <person name="Johnson M."/>
+        </authorList>
+      </citation>
+    </reference>
+  </entry>
+</uniprot>
