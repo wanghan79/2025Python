@@ -1,0 +1,10 @@
+<root>
+    <person>
+        <name>xiaoming</name>
+        <score>85</score>
+    </person>
+    <person>
+        <name>xiaoli</name>
+        <score>90</score>
+    </person>
+</root>
