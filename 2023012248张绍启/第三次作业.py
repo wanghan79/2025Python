@@ -1,133 +1,221 @@
 import random
 import string
-from functools import wraps
+import math
+from typing import Callable, Dict, Any, Generator, List, Union, Tuple, Iterator
+from collections import defaultdict
 
+NUMBER_TYPE = {'int', 'float', 'double'}
+BASIC_TYPE = {'int', 'float', 'double', 'str', 'bool', 'choice'}
+CONTAINER_TYPE = {'list', 'tuple', 'dict', 'set'}
 
-def random_string(length):
-    letters = string.ascii_letters
-    return ''.join(random.choice(letters) for _ in range(length))
+def avg(values: List[Union[int, float]]) -> float:
+    return sum(values) / len(values) if values else 0
 
+def std(values: List[Union[int, float]]) -> float:
+    if not values:
+        return 0
+    mean = avg(values)
+    return math.sqrt(sum((x - mean) ** 2 for x in values) / len(values))
 
-def random_list(element_type, length=5):
-    if element_type == 'int':
-        return [random.randint(0, 100) for _ in range(length)]
-    elif element_type == 'float':
-        return [round(random.uniform(0.0, 100.0), 2) for _ in range(length)]
-    elif element_type == 'str':
-        return [random_string(10) for _ in range(length)]
-    else:
-        raise ValueError(f"Unsupported list element type: {element_type}")
+def count(values: List[Any]) -> int:
+    return len(values)
 
-
-def random_tuple(element_types):
-    elements = []
-    for element_type in element_types:
-        if element_type == 'int':
-            elements.append(random.randint(0, 100))
-        elif element_type == 'float':
-            elements.append(round(random.uniform(0.0, 100.0), 2))
-        elif element_type == 'str':
-            elements.append(random_string(10))
-        else:
-            raise ValueError(f"Unsupported tuple element type: {element_type}")
-    return tuple(elements)
-
-
-def sample_generator(sample_count, sample_structure):
-    for _ in range(sample_count):
-        sample = {}
-        for field_name, field_info in sample_structure.items():
-            if isinstance(field_info, dict):
-                sample[field_name] = next(sample_generator(1, field_info))['nested']
-            elif isinstance(field_info, str):
-                if field_info == 'int':
-                    sample[field_name] = random.randint(0, 100)
-                elif field_info == 'float':
-                    sample[field_name] = round(random.uniform(0.0, 100.0), 2)
-                elif field_info == 'str':
-                    sample[field_name] = random_string(10)
-                elif field_info == 'list':
-                    sample[field_name] = random_list('int')
-                elif field_info == 'tuple':
-                    sample[field_name] = random_tuple(['int', 'float'])
-                else:
-                    raise ValueError(f"Unsupported field type: {field_info}")
-            elif isinstance(field_info, list):
-                sample[field_name] = random_tuple(field_info)
-            else:
-                raise ValueError(f"Unsupported field info format: {field_info}")
-        yield {'nested': sample}
-
-
-def statistics_decorator(*operations):
+def StaticRes(*sargs: Callable):
     def decorator(func):
-        @wraps(func)
         def wrapper(*args, **kwargs):
-            samples = list(func(*args, **kwargs))
-            results = [sample['nested'] for sample in samples]
-
-            all_values = []
-
-            def extract_numeric_values(data):
-                if isinstance(data, (int, float)):
-                    all_values.append(data)
-                elif isinstance(data, dict):
-                    for value in data.values():
-                        extract_numeric_values(value)
-                elif isinstance(data, list):
-                    for item in data:
-                        extract_numeric_values(item)
-                elif isinstance(data, tuple):
-                    for item in data:
-                        extract_numeric_values(item)
-
-            for result in results:
-                extract_numeric_values(result)
-
-            stats = {}
-            for op in operations:
-                if op == 'SUM':
-                    stats[op] = sum(all_values)
-                elif op == 'AVG':
-                    stats[op] = sum(all_values) / len(all_values) if all_values else 0
-                elif op == 'MAX':
-                    stats[op] = max(all_values) if all_values else None
-                elif op == 'MIN':
-                    stats[op] = min(all_values) if all_values else None
+            values = []
+            
+            type_grouped_data = defaultdict(list)
+            
+            for sample in func(*args, **kwargs):
+                sample_type = type(sample).__name__
+                type_grouped_data[sample_type].append(sample)
+                
+                if isinstance(sample, (int, float)):
+                    values.append(sample)
+            
+            stats_result = {}
+            
+            # 全局统计
+            if values:
+                for static_func in sargs:
+                    if static_func.__name__ in ['sum', 'max', 'min', 'avg', 'std', 'count']:
+                        if static_func.__name__ in ['sum', 'max', 'min']:
+                            stats_result[static_func.__name__] = static_func(values)
+                        elif static_func.__name__ == 'avg':
+                            stats_result['avg'] = avg(values)
+                        elif static_func.__name__ == 'std':
+                            stats_result['std'] = std(values)
+                        elif static_func.__name__ == 'count':
+                            stats_result['count'] = count(values)
+            
+            # 按类型统计
+            type_stats = {}
+            for data_type, data_list in type_grouped_data.items():
+                if data_type in ['int', 'float']:
+                    type_stats[data_type] = {
+                        'count': len(data_list),
+                        'sum': sum(data_list) if data_list else 0,
+                        'avg': avg(data_list),
+                        'min': min(data_list) if data_list else None,
+                        'max': max(data_list) if data_list else None,
+                        'std': std(data_list)
+                    }
                 else:
-                    raise ValueError(f"Unsupported operation: {op}")
-
-            print("Generated Samples:")
-            for sample in results:
-                print(sample)
-
-            for key, value in stats.items():
-                print(f"{key}: {value}")
-
-            return samples
-
+                    type_stats[data_type] = {
+                        'count': len(data_list)
+                    }
+            
+            return {
+                'statistics': stats_result,
+                'by_type': type_stats,
+                'samples': values[:10] if len(values) > 10 else values  # 只返回前10个样本
+            }
         return wrapper
-
     return decorator
 
+def generateNumber(**kwargs) -> Generator[Union[int, float, str, bool], None, None]:
+    _type, _info = next(iter(kwargs.items()))
+    count = _info.get('num', 1)
 
-if __name__ == "__main__":
-    structure = {
-        'id': 'int',
-        'value': 'float',
-        'description': 'str',
-        'attributes': ['int', 'float'],
-        'tags': 'list',
-        'info': {
-            'nested_id': 'int',
-            'nested_value': 'float'
+    if _type == 'int':
+        if 'datarange' not in _info:
+            raise ValueError('int类型必须提供datarange参数')
+        start, end = _info['datarange']
+        for _ in range(count):
+            yield random.randint(start, end)
+            
+    elif _type == 'float':
+        if 'datarange' not in _info:
+            raise ValueError('float类型必须提供datarange参数')
+        start, end = _info['datarange']
+        precision = _info.get('precision', None)
+        for _ in range(count):
+            value = random.uniform(start, end)
+            if precision is not None:
+                value = round(value, precision)
+            yield value
+            
+    elif _type == 'str':
+        datarange = _info.get('datarange', string.ascii_letters)
+        length = _info.get('len', 5)
+        for _ in range(count):
+            yield ''.join(random.choice(datarange) for _ in range(length))
+            
+    elif _type == 'bool':
+        for _ in range(count):
+            yield random.choice([True, False])
+            
+    elif _type == 'choice':
+        options = _info.get('options', [])
+        if not options:
+            raise ValueError('choice类型必须提供options参数')
+        for _ in range(count):
+            yield random.choice(options)
+
+def generateContainer(**kwargs) -> Generator[Any, None, None]:
+    _type, _info = next(iter(kwargs.items()))
+    count = _info.get('num', 1)
+
+    if _type == 'tuple' or _type == 'list' or _type == 'set':
+        for _ in range(count):
+            container_items = []
+            for k, v in _info.items():
+                if k != 'num':
+                    if k in BASIC_TYPE:
+                        container_items.extend(list(generateNumber(**{k: v})))
+                    elif k in CONTAINER_TYPE:
+                        container_items.extend(list(generateContainer(**{k: v})))
+            
+            # 展开容器内的所有元素
+            for item in container_items:
+                yield item
+                
+    elif _type == 'dict':
+        for _ in range(count):
+            for k, v in _info.items():
+                if k != 'num':
+                    if 'key' in v and 'value' in v:
+                        # 生成键值对
+                        keys = list(generateAType(**v['key']))
+                        values = list(generateAType(**v['value']))
+                        
+                        # 只处理数值类型的值
+                        for i in range(min(len(keys), len(values))):
+                            if isinstance(values[i], (int, float)):
+                                yield values[i]
+
+def generateAType(**kwargs) -> Generator[Any, None, None]:
+    if len(kwargs) != 1:
+        raise ValueError('接收到的键值对个数不为1')
+
+    _type, _info = next(iter(kwargs.items()))
+
+    if _type in BASIC_TYPE:
+        yield from generateNumber(**{_type: _info})
+    elif _type in CONTAINER_TYPE:
+        yield from generateContainer(**{_type: _info})
+
+@StaticRes(sum, max, min, avg, std, count)
+def sampling(**kwargs) -> Iterator[Any]:
+    for k, v in kwargs.items():
+        yield from generateAType(**{k: v})
+
+
+if __name__=='__main__':
+    # EXAMPLE 1
+    print("示例1: 元组中的基本类型统计")
+    result1 = sampling(tuple={
+        'num': 100,
+        'int': {
+            'num': 2,
+            'datarange': (0, 1000)
+        },
+        'float': {
+            'num': 2,
+            'datarange': (0, 1000.0)
+        },
+        'str': {
+            'num': 3,
+            'datarange': string.ascii_letters,
+            'len': 5
         }
-    }
-
-
-    @statistics_decorator('SUM', 'AVG', 'MAX', 'MIN')
-    def generate_samples(count, struct):
-        return sample_generator(count, struct)
-
-
-    generate_samples(5, structure)
+    })
+    print(result1)
+    
+    # EXAMPLE 2
+    print("\n示例2: 嵌套元组统计")
+    result2 = sampling(tuple={
+        'num': 50,  # 减小数量以便快速运行
+        'tuple': {
+            'num': 3,
+            'int': {
+                'num': 2,
+                'datarange': (1, 100)
+            },
+            'float': {
+                'num': 2,
+                'datarange': (1.0, 100.0),
+                'precision': 2
+            }
+        }
+    })
+    print(result2)
+    
+    # EXAMPLE 3
+    print("\n示例3: 包含布尔值和选择项的统计")
+    result3 = sampling(list={
+        'num': 1,
+        'int': {
+            'num': 10,
+            'datarange': (1, 10)
+        },
+        'bool': {
+            'num': 5
+        },
+        'choice': {
+            'num': 3,
+            'options': [10, 20, 30, 40, 50]
+        }
+    })
+    print(result3)
