@@ -1,1 +1,219 @@
+import random
+import string
+from functools import wraps
 
+
+def statistics_decorator(ops):
+    def decor(func):
+        @wraps(func)
+        def wrapper(sample_count, structure):
+            generated_samples = []
+            for _ in range(sample_count):
+                sample = create_sample(structure)
+                generated_samples.append(sample)
+
+            numeric_values = []
+            for sample in generated_samples:
+                for element in sample:
+                    if isinstance(element, tuple):
+                        numeric_values.extend([val for val in element if isinstance(val, (int, float))])
+                    elif isinstance(element, list):
+                        numeric_values.extend([val for val in element if isinstance(val, (int, float))])
+                    elif isinstance(element, dict):
+                        for val in element.values():
+                            if isinstance(val, (int, float)):
+                                numeric_values.append(val)
+                    elif isinstance(element, (int, float)):
+                        numeric_values.append(element)
+
+            print("\n" + "=" * 30 + " 统计结果 " + "=" * 30)
+            if not numeric_values:
+                print("没有可用于统计的数值数据")
+                return generated_samples
+
+            if 'SUM' in ops:
+                print(f"总和 (SUM): {sum(numeric_values):.4f}")
+            if 'AVG' in ops:
+                avg = sum(numeric_values) / len(numeric_values)
+                print(f"平均值 (AVG): {avg:.4f}")
+            if 'MAX' in ops:
+                print(f"最大值 (MAX): {max(numeric_values):.4f}")
+            if 'MIN' in ops:
+                print(f"最小值 (MIN): {min(numeric_values):.4f}")
+
+            print("=" * 70)
+            return generated_samples
+
+        return wrapper
+    return decorator
+
+
+def create_sample(struct_def):
+    sample = []
+    for field, spec in struct_def.items():
+        if isinstance(spec, dict):
+            if field in ('tuple', 'list', 'dict'):
+                container = []
+                for data_type, params in spec.items():
+                    if data_type == 'str':
+                        char_set = params.get('datarange', string.ascii_uppercase)
+                        str_length = params.get('len', 10)
+                        rand_str = ''.join(random.choice(char_set) for _ in range(str_length))
+                        container.append(rand_str)
+                    elif data_type == 'int':
+                        num_range = params.get('datarange', (0, 100))
+                        start, end = num_range
+                        rand_int = random.randint(start, end)
+                        container.append(rand_int)
+                    elif data_type == 'float':
+                        num_range = params.get('datarange', (0.0, 100.0))
+                        start, end = num_range
+                        rand_float = random.uniform(start, end)
+                        container.append(rand_float)
+                if field == 'tuple':
+                    sample.append(tuple(container))
+                elif field == 'list':
+                    sample.append(container)
+                elif field == 'dict':
+                    dict_data = {}
+                    for idx, val in enumerate(container):
+                        if isinstance(val, str):
+                            dict_data['str'] = val
+                        elif isinstance(val, int):
+                            dict_data['int'] = val
+                        elif isinstance(val, float):
+                            dict_data['float'] = val
+                    sample.append(dict_data)
+            else:
+                if field == 'str':
+                    char_set = spec.get('datarange', string.ascii_uppercase)
+                    str_length = spec.get('len', 10)
+                    rand_str = ''.join(random.choice(char_set) for _ in range(str_length))
+                    sample.append(rand_str)
+                elif field == 'int':
+                    num_range = spec.get('datarange', (0, 100))
+                    start, end = num_range
+                    rand_int = random.randint(start, end)
+                    sample.append(rand_int)
+                elif field == 'float':
+                    num_range = spec.get('datarange', (0.0, 100.0))
+                    start, end = num_range
+                    rand_float = random.uniform(start, end)
+                    sample.append(rand_float)
+        elif isinstance(spec, list):
+            collection = []
+            for item_spec in spec:
+                if isinstance(item_spec, dict):
+                    for data_type, params in item_spec.items():
+                        if data_type == 'int':
+                            num_range = params.get('datarange', (0, 100))
+                            start, end = num_range
+                            collection.append(random.randint(start, end))
+                        elif data_type == 'float':
+                            num_range = params.get('datarange', (0.0, 100.0))
+                            start, end = num_range
+                            collection.append(random.uniform(start, end))
+                        elif data_type == 'str':
+                            char_set = params.get('datarange', string.ascii_uppercase)
+                            str_length = params.get('len', 10)
+                            collection.append(''.join(random.choice(char_set) for _ in range(str_length)))
+            sample.append(collection)
+        else:
+            sample.append(spec)
+    return sample
+
+
+def run_generator():
+    data_structure = {
+        'tuple': {
+            'str': {'datarange': string.ascii_uppercase, 'len': 50},
+            'int': {'datarange': (0, 10)},
+            'float': {'datarange': (0.0, 1.0)}
+        },
+        'list': {
+            'float': {'datarange': (0.0, 1.0)},
+            'str': {'datarange': string.ascii_lowercase, 'len': 10}
+        },
+        'dict': {
+            'str': {'datarange': string.ascii_lowercase, 'len': 10},
+            'float': {'datarange': (0.0, 1.0)}
+        },
+        'int': {'datarange': (0, 10)},
+        'float': {'datarange': (0.0, 1.0)},
+        'str': {'datarange': string.ascii_letters, 'len': 20}
+    }
+
+    print("==== 随机数据生成器 ===")
+    while True:
+        try:
+            count = int(input("请输入要生成的样本数量: "))
+            if count < 1:
+                print("请输入大于0的整数")
+                continue
+            break
+        except ValueError:
+            print("无效输入，请输入整数")
+
+    valid_operations = ['SUM', 'AVG', 'MAX', 'MIN']
+    chosen_ops = []
+    print("\n请选择统计操作（输入数字选择，0结束选择）：")
+    print("1: SUM（总和）")
+    print("2: AVG（平均值）")
+    print("3: MAX（最大值）")
+    print("4: MIN（最小值）")
+    print("0: 结束选择")
+
+    while True:
+        choice = input("请选择操作（输入数字）: ")
+        if choice == '0':
+            if not chosen_ops:
+                print("请至少选择一个统计操作")
+                continue
+            break
+        elif choice == '1' and 'SUM' not in chosen_ops:
+            chosen_ops.append('SUM')
+            print("已添加SUM统计")
+        elif choice == '2' and 'AVG' not in chosen_ops:
+            chosen_ops.append('AVG')
+            print("已添加AVG统计")
+        elif choice == '3' and 'MAX' not in chosen_ops:
+            chosen_ops.append('MAX')
+            print("已添加MAX统计")
+        elif choice == '4' and 'MIN' not in chosen_ops:
+            chosen_ops.append('MIN')
+            print("已添加MIN统计")
+        else:
+            print("无效选择，请输入0-4之间的数字")
+
+    decorated_function = statistics_decorator(chosen_ops)(lambda n, s: [create_sample(s) for _ in range(n)])
+
+    print(f"\n开始生成 {count} 个随机样本并进行统计...")
+    samples = decorated_function(count, data_structure)
+
+    print(f"\n{count} 个样本的详细数据：")
+    for i, sample in enumerate(samples):
+        print(f"\n样本 #{i + 1}:")
+        print("-" * 50)
+        for item in sample:
+            if isinstance(item, tuple):
+                print(f"元组: {item}")
+            elif isinstance(item, list):
+                print(f"列表: {item}")
+            elif isinstance(item, dict):
+                print(f"字典: {item}")
+            elif isinstance(item, int):
+                print(f"整数: {item}")
+            elif isinstance(item, float):
+                print(f"浮点数: {item}")
+            elif isinstance(item, str):
+                if len(item) > 30:
+                    print(f"字符串: {item[:30]}...")
+                else:
+                    print(f"字符串: {item}")
+        print("-" * 50)
+
+    print(f"\n成功生成 {count} 个样本并完成统计!")
+
+
+if __name__ == "__main__":
+    run_generator()
