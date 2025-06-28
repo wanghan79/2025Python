@@ -1,0 +1,151 @@
+"""
+随机数据生成工具
+支持生成各种类型的随机数据，包括数字、字符串、布尔值、列表、字典等
+"""
+
+import string
+import random
+from typing import Generator, Any, Dict, Union, List, Tuple
+
+class RandomDataMaker:
+    """我的随机数据生成器"""
+    
+    @classmethod
+    def make_number(cls, min_val: int, max_val: int) -> int:
+        """生成指定范围内的随机整数"""
+        return random.randint(min_val, max_val)
+    
+    @classmethod
+    def make_decimal(cls, min_val: float, max_val: float, decimal_places: int = None) -> float:
+        """生成随机浮点数，可指定小数位数"""
+        num = random.uniform(min_val, max_val)
+        return round(num, decimal_places) if decimal_places is not None else num
+    
+    @classmethod
+    def make_text(cls, length: int, chars: str = string.ascii_letters) -> str:
+        """生成随机字符串"""
+        return ''.join(random.choice(chars) for _ in range(length))
+    
+    @classmethod
+    def make_boolean(cls) -> bool:
+        """随机生成True或False"""
+        return random.choice([True, False])
+    
+    @classmethod
+    def pick_random(cls, items: List[Any]) -> Any:
+        """从列表中随机选取一个元素"""
+        return random.choice(items)
+    
+    @classmethod
+    def make_collection(cls, col_type: type, elements: Dict[str, Dict]) -> Union[List, Tuple]:
+        """生成列表或元组集合"""
+        result = []
+        for elem_type, elem_conf in elements.items():
+            if elem_type != 'count':
+                generated = list(cls.generate(elem_type, elem_conf))
+                result.extend(generated)
+        return col_type(result)
+    
+    @classmethod
+    def make_dictionary(cls, items: Dict[str, Dict]) -> Dict[Any, Any]:
+        """生成字典数据"""
+        output = {}
+        for item_name, item_conf in items.items():
+            if item_name != 'count':
+                key_conf = item_conf.get('key', {})
+                val_conf = item_conf.get('value', {})
+                
+                keys = list(cls.generate('key', key_conf)) if key_conf else []
+                values = list(cls.generate('value', val_conf)) if val_conf else []
+                
+                for k, v in zip(keys, values):
+                    output[k] = v
+        return output
+    
+    @classmethod
+    def generate(cls, data_type: str, options: Dict[str, Any]) -> Generator[Any, None, None]:
+        """数据生成核心方法"""
+        quantity = options.get('count', 1)
+        
+        for _ in range(quantity):
+            if data_type == 'int':
+                yield cls.make_number(*options['range'])
+            elif data_type == 'float':
+                yield cls.make_decimal(
+                    *options['range'],
+                    options.get('decimal')
+                )
+            elif data_type == 'str':
+                yield cls.make_text(
+                    options.get('length', 1),
+                    options.get('chars', string.ascii_letters)
+                )
+            elif data_type == 'bool':
+                yield cls.make_boolean()
+            elif data_type == 'choice':
+                yield cls.pick_random(options.get('items', []))
+            elif data_type in ('list', 'tuple'):
+                yield cls.make_collection(
+                    list if data_type == 'list' else tuple,
+                    {k: v for k, v in options.items() if k != 'count'}
+                )
+            elif data_type == 'dict':
+                yield cls.make_dictionary(
+                    {k: v for k, v in options.items() if k != 'count'}
+                )
+            elif data_type in ('key', 'value'):
+                for nested_type, nested_conf in options.items():
+                    yield from cls.generate(nested_type, nested_conf)
+
+
+def create_samples(**kwargs) -> Generator[Any, None, None]:
+    """创建数据样本"""
+    for sample_type, config in kwargs.items():
+        yield from RandomDataMaker.generate(sample_type, config)
+
+
+def create_batch(size: int, **kwargs) -> List[Any]:
+    """批量生成数据"""
+    generator = create_samples(**kwargs)
+    return [next(generator) for _ in range(size)]
+
+
+if __name__ == '__main__':
+    print("示例1：生成两个包含随机数据的元组")
+    samples = create_samples(tuple={
+        'count': 2,
+        'int': {'count': 3, 'range': (1, 10)},
+        'str': {'count': 2, 'length': 5, "chars": string.ascii_uppercase}
+    })
+    for sample in samples:
+        print(sample)
+
+    print("\n示例2：生成复杂结构的列表")
+    samples = create_samples(list={
+        'count': 2,
+        'int': {'count': 2, 'range': (100, 200)},
+        'float': {'count': 1, 'range': (1.5, 9.5), 'decimal': 2},
+        'str': {'count': 1, 'length': 4, 'chars': string.ascii_lowercase},
+        'tuple': {
+            'count': 1,
+            'int': {'count': 2, 'range': (0, 5)},
+            'str': {'count': 1, 'length': 3, 'chars': string.digits}
+        }
+    })
+    for sample in samples:
+        print(sample)
+
+    print("\n示例3：生成字典数据")
+    samples = create_samples(dict={
+        'count': 1,
+        'pair': {
+            'key': {'str': {'count': 3, 'length': 2, 'chars': string.ascii_uppercase}},
+            'value': {'int': {'count': 3, 'range': (1, 100)}}
+        }
+    })
+    for sample in samples:
+        print(sample)
+
+    print("\n示例4：批量生成布尔值")
+    batch = create_batch(5, bool={'count': 5})
+    print(batch)
