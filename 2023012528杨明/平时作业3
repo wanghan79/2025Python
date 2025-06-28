@@ -1,1 +1,125 @@
+import functools
+from typing import Any, Callable, Dict, Generator, List, Set, Tuple, Union
 
+
+def stats_operations(*operations: str) -> Callable:
+
+    valid_ops = {'SUM', 'AVG', 'MAX', 'MIN'}
+
+    # 验证操作是否有效
+    for op in operations:
+        if op not in valid_ops:
+            raise ValueError(f"无效的统计操作: {op}. 有效操作: {valid_ops}")
+
+    def decorator(func: Callable) -> Callable:
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Tuple[Generator, Dict[str, Dict[str, float]]]:
+
+            generator = func(*args, **kwargs)
+
+            stats_data = {}
+            field_types = kwargs.get('structure', args[1] if len(args) > 1 else {})
+
+            numeric_fields = {
+                field for field, typ in field_types.items()
+                if isinstance(typ, str) and typ in ('int', 'float')
+            }
+
+            for field in numeric_fields:
+                stats_data[field] = {
+                    'values': [],
+                    'SUM': None,
+                    'AVG': None,
+                    'MAX': None,
+                    'MIN': None
+                }
+
+            def wrapped_generator():
+                for sample in generator:
+                    # 收集数值字段的值用于统计
+                    for field in numeric_fields:
+                        if field in sample:
+                            stats_data[field]['values'].append(sample[field])
+
+                    yield sample
+
+                for field, data in stats_data.items():
+                    values = data['values']
+                    if values:
+                        if 'SUM' in operations:
+                            data['SUM'] = sum(values)
+                        if 'AVG' in operations:
+                            data['AVG'] = sum(values) / len(values)
+                        if 'MAX' in operations:
+                            data['MAX'] = max(values)
+                        if 'MIN' in operations:
+                            data['MIN'] = min(values)
+
+            gen = wrapped_generator()
+            return gen, {field: {op: data[op] for op in operations if data[op] is not None}
+                         for field, data in stats_data.items()}
+
+        return wrapper
+
+    return decorator
+
+@stats_operations('SUM', 'AVG', 'MAX', 'MIN')
+def generate_random_samples(
+        sample_count: int,
+        structure: Dict[str, Union[str, List[Any]]]
+) -> Generator[Dict[str, Any], None, None]:
+    """
+    随机样本生成函数（被修饰的版本）
+    """
+    import random
+    import string
+
+    for _ in range(sample_count):
+        sample = {}
+        for field, field_type in structure.items():
+            if isinstance(field_type, list):
+                sample[field] = random.choice(field_type)
+            else:
+                if field_type == "int":
+                    sample[field] = random.randint(0, 100)
+                elif field_type == "float":
+                    sample[field] = random.uniform(0, 100)
+                elif field_type == "str":
+                    length = random.randint(5, 10)
+                    sample[field] = ''.join(random.choices(string.ascii_letters, k=length))
+                elif field_type == "bool":
+                    sample[field] = random.choice([True, False])
+                else:
+                    raise ValueError(f"不支持的字段类型: {field_type}")
+        yield sample
+
+
+# 使用示例
+if __name__ == "__main__":
+    # 定义样本结构
+    sample_structure = {
+        "id": "int",
+        "score": "float",
+        "age": "int",
+        "name": "str",
+        "department": ["HR", "Engineering", "Marketing", "Finance"]
+    }
+
+    # 生成样本并获取统计结果
+    samples_gen, stats = generate_random_samples(100, sample_structure)
+
+    # 打印前5个样本
+    print("前5个样本:")
+    for i, sample in enumerate(samples_gen):
+        if i < 5:
+            print(sample)
+        else:
+            break  # 只打印前5个
+
+    # 打印统计结果
+    print("\n统计结果:")
+    for field, field_stats in stats.items():
+        print(f"\n字段: {field}")
+        for op, value in field_stats.items():
+            print(f"{op}: {value:.2f}" if isinstance(value, float) else f"{op}: {value}")
