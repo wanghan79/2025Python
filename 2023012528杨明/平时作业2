@@ -1,1 +1,59 @@
+import random
+import string
+from typing import Any, Dict, Generator, List, Union
 
+
+def random_sample_generator(
+        sample_count: int,
+        structure: Dict[str, Union[str, List[Any]]]
+) -> Generator[Dict[str, Any], None, None]:
+    for _ in range(sample_count):
+        sample = {}
+        for field, field_type in structure.items():
+            if isinstance(field_type, list):
+                # 如果提供了可选值列表，从中随机选择
+                sample[field] = random.choice(field_type)
+            else:
+                # 根据类型生成随机值
+                if field_type == "int":
+                    sample[field] = random.randint(0, 100)
+                elif field_type == "float":
+                    sample[field] = random.uniform(0, 100)
+                elif field_type == "str":
+                    length = random.randint(5, 10)
+                    sample[field] = ''.join(random.choices(string.ascii_letters, k=length))
+                elif field_type == "bool":
+                    sample[field] = random.choice([True, False])
+                else:
+                    raise ValueError(f"不支持的字段类型: {field_type}")
+        yield sample
+
+
+# 使用示例
+if __name__ == "__main__":
+    # 定义样本结构
+    sample_structure = {
+        "id": "int",
+        "name": "str",
+        "score": "float",
+        "is_active": "bool",
+        "department": ["HR", "Engineering", "Marketing", "Finance"]
+    }
+
+    # 生成5个随机样本
+    print("生成的随机样本:")
+    for i, sample in enumerate(random_sample_generator(5, sample_structure), 1):
+        print(f"样本 {i}: {sample}")
+
+    # 另一个示例 - 生成用户数据
+    user_structure = {
+        "user_id": "int",
+        "username": "str",
+        "email": "str",
+        "age": "int",
+        "premium_member": "bool"
+    }
+
+    print("\n生成的随机用户:")
+    for user in random_sample_generator(3, user_structure):
+        print(user)
