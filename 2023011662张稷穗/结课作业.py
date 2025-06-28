@@ -16,7 +16,7 @@ def get_namespace(fileName):
 def xml_parser(func):
     """修饰器，用于解析XML文件并处理指定标签的元素"""
     @wraps(func)
-    def wrapper(fileName, elemTag):
+    def wrapper(fileName, elemTag=None):
         if not path.isfile(fileName) or not fileName.endswith(".xml"):
             raise FileNotFoundError(f"无效的 XML 文件: {fileName}")
 
@@ -25,8 +25,11 @@ def xml_parser(func):
         ns_prefix = f"{{{ns_uri}}}" if ns_uri else ""
         count = 0
 
+        # 如果未指定标签，解析所有元素
+        tag = ns_prefix + elemTag if elemTag else None
+
         # 解析XML文件
-        context = etree.iterparse(fileName, events=('end',), tag=ns_prefix + elemTag)
+        context = etree.iterparse(fileName, events=('end',), tag=tag)
         for event, elem in context:
             try:
                 func(elem)  # 调用被修饰的函数处理元素
@@ -44,16 +47,22 @@ def xml_parser(func):
 
 @xml_parser
 def print_element(elem):
-    """打印XML元素的文本内容"""
-    print(elem.text)
+    """打印XML元素的完整内容"""
+    # 打印元素的标签和文本内容
+    print(f"标签: {elem.tag}, 文本: {elem.text}")
+
+    # 打印子元素内容
+    for child in elem:
+        print(f"  子标签: {child.tag}, 子文本: {child.text}")
 
 def main():
     """主函数，解析命令行参数并调用解析器"""
-    if len(sys.argv) != 3:
-        print(f"用法: {sys.argv[0]} <XML 文件> <元素标签>")
+    if len(sys.argv) not in (2, 3):
+        print(f"用法: {sys.argv[0]} <XML 文件> [元素标签]")
         sys.exit(1)
 
-    fileName, elemTag = sys.argv[1], sys.argv[2]
+    fileName = sys.argv[1]
+    elemTag = sys.argv[2] if len(sys.argv) == 3 else None
     count = print_element(fileName, elemTag)
     print(f"已经解析 {count} 个 XML 元素。")
 
