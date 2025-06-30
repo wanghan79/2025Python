@@ -1,0 +1,179 @@
+import random
+import string
+from collections.abc import Iterable, Mapping
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
+
+# 定义类型别名以提高可读性
+Numeric = Union[int, float]
+StatsFunc = Callable[[List[Numeric]], Dict[str, Numeric]]
+DataStructure = Dict[str, Any]
+
+
+def extract_numeric(data: Any) -> List[Numeric]:
+    """
+    从嵌套数据结构中递归提取所有数值（int/float）
+    
+    参数:
+        data: 任意嵌套的数据结构
+        
+    返回:
+        包含所有数值的列表
+    """
+    nums = []
+    
+    if isinstance(data, (int, float)):
+        nums.append(data)
+    elif isinstance(data, Mapping):  # 处理字典类型
+        for value in data.values():
+            nums.extend(extract_numeric(value))
+    elif isinstance(data, Iterable) and not isinstance(data, str):  # 处理可迭代对象（排除字符串）
+        for item in data:
+            nums.extend(extract_numeric(item))
+    
+    return nums
+
+
+def static_res_decorator(stats_funcs: List[StatsFunc]):
+    """
+    装饰器工厂函数，为生成器添加统计功能
+    
+    参数:
+        stats_funcs: 统计函数列表
+        
+    返回:
+        装饰器函数
+    """
+    if not stats_funcs:
+        raise ValueError("必须至少提供一个统计函数")
+    
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args, **kwargs) -> Generator[Dict[str, Any], None, None]:
+            gen = func(*args, **kwargs)
+            for data in gen:
+                nums = extract_numeric(data)
+                stats = {}
+                
+                for fn in stats_funcs:
+                    result = fn(nums)
+                    if not isinstance(result, dict):
+                        raise TypeError(f"统计函数 {fn.__name__} 必须返回 dict 类型结果")
+                    stats.update(result)
+                
+                yield {'tree': data, 'stats': stats}
+        
+        return wrapper
+    
+    return decorator
+
+
+def random_generator(data_type: str, boundary: Dict[str, Any]) -> Any:
+    """
+    根据给定类型和边界生成随机值
+    
+    参数:
+        data_type: 数据类型 ('int', 'float', 'str')
+        boundary: 数据生成边界条件
+        
+    返回:
+        生成的随机值
+    """
+    if data_type == "int":
+        lo, hi = boundary['datarange']
+        return random.randint(lo, hi)
+    elif data_type == "float":
+        lo, hi = boundary['datarange']
+        return random.uniform(lo, hi)
+    elif data_type == "str":
+        char_set = boundary['datarange']
+        length = boundary['len']
+        return ''.join(random.choices(char_set, k=length))
+    else:
+        raise ValueError(f"不支持的数据类型: {data_type}")
+
+
+def generate_data_structure(**item: Dict[str, Any]) -> DataStructure:
+    """
+    递归生成嵌套数据结构
+    
+    参数:
+        item: 描述数据结构的字典
+        
+    返回:
+        生成的数据结构
+    """
+    result = {}
+    
+    for key, value in item.items():
+        if key in ("int", "float", "str"):
+            result[key] = random_generator(key, value)
+        elif key == "list":
+            result[key] = [generate_data_structure(**i) for i in value]
+        elif key == "dict":
+            # 处理多个键值对合并为一个字典的情况
+            combined = {}
+            for element in value:
+                generated = generate_data_structure(**element)
+                if isinstance(generated, dict):
+                    combined.update(generated)
+                else:
+                    raise TypeError("字典元素必须生成字典类型")
+            result[key] = combined
+        elif key == "tuple":
+            result[key] = tuple(generate_data_structure(**i) for i in value)
+        elif key == "set":
+            # 集合元素必须是可哈希类型
+            result[key] = {generate_data_structure(**i) for i in value}
+        else:
+            raise ValueError(f"不支持的数据结构类型: {key}")
+    
+    return result
+
+
+@static_res_decorator(stats_funcs=[
+    lambda nums: {'MIN': min(nums) if nums else 0},
+    lambda nums: {'MAX': max(nums) if nums else 0},
+    lambda nums: {'AVG': sum(nums) / len(nums) if nums else 0},
+    lambda nums: {'SUM': sum(nums) if nums else 0}
+])
+def multi_generator(count: int, **structure: Dict[str, Any]) -> Generator[DataStructure, None, None]:
+    """
+    生成多个数据结构的生成器
+    
+    参数:
+        count: 生成的数据结构数量
+        structure: 数据结构定义
+        
+    返回:
+        数据结构生成器
+    """
+    for _ in range(count):
+        yield generate_data_structure(**structure)
+
+
+def main():
+    """主函数，演示数据生成和统计功能"""
+    # 定义数据结构模板
+    data_template = {
+        "dict": [{
+            "tuple": [
+                {"int": {"datarange": [1, 10]}},
+                {"int": {"datarange": [1, 10]}}
+            ],
+            "list": [
+                {"dict": [
+                    {"float": {"datarange": [1, 10]}},
+                    {"str": {"datarange": string.ascii_uppercase, "len": 5}}
+                ]}
+            ] * 3  # 重复3次
+        }]
+    }
+    
+    # 生成并打印10个数据结构及其统计信息
+    for i, item in enumerate(multi_generator(10, **data_template)):
+        print(f"\n=== 数据结构 #{i+1} ===")
+        print("结构:", item['tree'])
+        print("统计:", item['stats'])
+
+
+if __name__ == "__main__":
+    main()
