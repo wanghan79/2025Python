@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+# coding:utf-8
+
+import largeXMLDealer
+import sys
+
+def xml_parser_decorator(fileName, elemTag):
+    def decorator(func):
+        def wrapper():
+            lxmld = largeXMLDealer.largeXMLDealer()
+            count = lxmld.parse(fileName, elemTag, func)
+            print("Already parsed %d XML elements." % count)
+        return wrapper
+    return decorator
+
+if __name__ == "__main__":
+    fileName = sys.argv[1]
+    elemTag = sys.argv[2]
+
+    @xml_parser_decorator(fileName, elemTag)
+    def dealwithElement(elem):
+        if isinstance(elem, object):
+            print(elem.text)
+
+    dealwithElement()
