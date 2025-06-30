@@ -1,0 +1,160 @@
+import random
+from typing import Any, Generator, Union, List, Dict, Tuple
+from dataclasses import dataclass
+from enum import Enum, auto
+
+class DataType(Enum):
+    """支持的数据类型枚举"""
+    INTEGER = auto()
+    FLOAT = auto()
+    STRING = auto()
+    BOOLEAN = auto()
+    TUPLE = auto()
+    DICT = auto()
+
+@dataclass
+class SampleConfig:
+    """样本配置类"""
+    data_type: DataType
+    count: int = 10
+    int_range: Tuple[int, int] = (0, 100)
+    float_range: Tuple[float, float] = (0.0, 1.0)
+    string_length: int = 5
+    string_chars: str = 'abcdefghijklmnopqrstuvwxyz'
+    tuple_length: int = 3
+    dict_keys: List[str] = None
+
+def random_sample_generator(config: SampleConfig) -> Generator[Any, None, None]:
+    """
+    随机样本生成器
+    
+    参数:
+        config: SampleConfig 配置对象，指定生成样本的类型和参数
+    
+    返回:
+        生成器，每次迭代产生一个随机样本
+    """
+    if config.dict_keys is None and config.data_type == DataType.DICT:
+        config.dict_keys = [f'key_{i}' for i in range(3)]
+    
+    for _ in range(config.count):
+        if config.data_type == DataType.INTEGER:
+            yield random.randint(*config.int_range)
+        elif config.data_type == DataType.FLOAT:
+            yield random.uniform(*config.float_range)
+        elif config.data_type == DataType.STRING:
+            yield ''.join(random.choice(config.string_chars) for _ in range(config.string_length))
+        elif config.data_type == DataType.BOOLEAN:
+            yield random.choice([True, False])
+        elif config.data_type == DataType.TUPLE:
+            yield tuple(
+                random.randint(*config.int_range) 
+                for _ in range(config.tuple_length)
+            )
+        elif config.data_type == DataType.DICT:
+            yield {
+                key: random.randint(*config.int_range)
+                for key in config.dict_keys
+            }
+
+def generate_samples(config: SampleConfig) -> List[Any]:
+    """使用生成器生成样本列表"""
+    return list(random_sample_generator(config))
+
+# 使用范例
+if __name__ == "__main__":
+    print("=== 基本使用示例 ===")
+    
+    # 示例1: 生成10个随机整数
+    int_config = SampleConfig(
+        data_type=DataType.INTEGER,
+        count=10,
+        int_range=(1, 100)
+    )
+    int_samples = generate_samples(int_config)
+    print("\n整数样本:", int_samples)
+    
+    # 示例2: 生成5个随机浮点数
+    float_config = SampleConfig(
+        data_type=DataType.FLOAT,
+        count=5,
+        float_range=(0.0, 10.0)
+    )
+    float_samples = generate_samples(float_config)
+    print("\n浮点数样本:", float_samples)
+    
+    # 示例3: 生成3个随机字符串
+    str_config = SampleConfig(
+        data_type=DataType.STRING,
+        count=3,
+        string_length=8,
+        string_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    )
+    str_samples = generate_samples(str_config)
+    print("\n字符串样本:", str_samples)
+    
+    # 示例4: 生成2个随机布尔值
+    bool_config = SampleConfig(data_type=DataType.BOOLEAN, count=2)
+    bool_samples = generate_samples(bool_config)
+    print("\n布尔值样本:", bool_samples)
+    
+    # 示例5: 生成4个随机元组
+    tuple_config = SampleConfig(
+        data_type=DataType.TUPLE,
+        count=4,
+        tuple_length=3,
+        int_range=(10, 20)
+    )
+    tuple_samples = generate_samples(tuple_config)
+    print("\n元组样本:", tuple_samples)
+    
+    # 示例6: 生成3个随机字典
+    dict_config = SampleConfig(
+        data_type=DataType.DICT,
+        count=3,
+        dict_keys=['id', 'value', 'score'],
+        int_range=(1, 5)
+    )
+    dict_samples = generate_samples(dict_config)
+    print("\n字典样本:", dict_samples)
+    
+    print("\n=== 高级使用示例 ===")
+    
+    # 示例7: 使用生成器直接迭代
+    print("\n使用生成器直接迭代(5个随机整数):")
+    custom_config = SampleConfig(
+        data_type=DataType.INTEGER,
+        count=5,
+        int_range=(100, 200)
+    )
+    for i, sample in enumerate(random_sample_generator(custom_config), 1):
+        print(f"样本 {i}: {sample}")
+    
+    # 示例8: 组合使用
+    print("\n组合使用 - 生成用户数据:")
+    users = []
+    for _ in range(3):
+        user = {
+            'id': next(random_sample_generator(
+                SampleConfig(data_type=DataType.INTEGER, int_range=(1000, 9999), count=1)
+            )),
+            'name': next(random_sample_generator(
+                SampleConfig(
+                    data_type=DataType.STRING,
+                    string_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                    string_length=6,
+                    count=1
+                )
+            )),
+            'active': next(random_sample_generator(
+                SampleConfig(data_type=DataType.BOOLEAN, count=1)
+            )),
+            'scores': generate_samples(
+                SampleConfig(data_type=DataType.INTEGER, count=5, int_range=(1, 10))
+            )
+        }
+        users.append(user)
+    
+    print("\n生成的用户数据:")
+    for user in users:
+        print(user)
