@@ -1,0 +1,126 @@
+import xml.sax
+from functools import wraps
+import time
+import sys
+
+# 装饰器：测量函数执行时间
+def timing_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"{func.__name__} executed in {end_time - start_time:.4f} seconds")
+        return result
+    return wrapper
+
+# 装饰器：处理大文件解析的内存优化
+def memory_efficient_xml_parser(handler_class):
+    @wraps(handler_class)
+    def wrapper(xml_file, *args, **kwargs):
+        # 使用SAX解析器处理大XML文件
+        parser = xml.sax.make_parser()
+        # 关闭命名空间处理
+        parser.setFeature(xml.sax.handler.feature_namespaces, 0)
+        
+        # 创建自定义处理器实例
+        handler = handler_class(*args, **kwargs)
+        parser.setContentHandler(handler)
+        
+        try:
+            parser.parse(xml_file)
+            return handler.get_result()
+        except xml.sax.SAXException as e:
+            print(f"XML解析错误: {e}", file=sys.stderr)
+            return None
+    return wrapper
+
+# 装饰器：格式化打印输出
+def pretty_print_data(columns=None, max_width=30):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            data = func(*args, **kwargs)
+            
+            if not data:
+                print("没有数据可显示")
+                return
+            
+            # 如果未指定列，使用所有键
+            if columns is None and isinstance(data, dict):
+                columns = list(data.keys())
+            
+            # 打印表头
+            if isinstance(data, dict):
+                header = " | ".join(f"{col[:max_width]:<{max_width}}" for col in columns)
+                print(header)
+                print("-" * len(header))
+                
+                # 打印每行数据
+                for item in data:
+                    row = " | ".join(f"{str(item.get(col, ''))[:max_width]:<{max_width}}" 
+                                    for col in columns)
+                    print(row)
+            else:
+                # 简单列表数据的打印
+                for item in data:
+                    print(str(item)[:max_width])
+            
+            return data
+        return wrapper
+    return decorator
+
+# 示例：XML处理器类
+@memory_efficient_xml_parser
+class LargeXMLHandler(xml.sax.ContentHandler):
+    def __init__(self, target_tag, attributes=None):
+        self.target_tag = target_tag
+        self.attributes = attributes or []
+        self.current_data = {}
+        self.current_tag = None
+        self.records = []
+        self.temp_buffer = ""
+    
+    def startElement(self, tag, attributes):
+        self.current_tag = tag
+        if tag == self.target_tag:
+            self.current_data = {}
+            for attr in self.attributes:
+                if attr in attributes:
+                    self.current_data[attr] = attributes[attr]
+    
+    def characters(self, content):
+        if self.current_tag in self.attributes:
+            self.temp_buffer += content.strip()
+    
+    def endElement(self, tag):
+        if tag == self.current_tag and self.temp_buffer:
+            self.current_data[self.current_tag] = self.temp_buffer
+            self.temp_buffer = ""
+        
+        if tag == self.target_tag and self.current_data:
+            self.records.append(self.current_data.copy())
+            self.current_data = {}
+    
+    def get_result(self):
+        return self.records
+
+# 示例使用
+@timing_decorator
+@pretty_print_data(columns=['name', 'age', 'email'], max_width=15)
+def process_large_xml(xml_file_path):
+    """处理大型XML文件并返回结构化数据"""
+    handler = LargeXMLHandler('person', ['name', 'age', 'email'])
+    return handler(xml_file_path)
+
+# 主函数
+if __name__ == "__main__":
+    # 示例XML文件路径
+    xml_file = "large_data.xml"
+    
+    # 处理并打印XML数据
+    data = process_large_xml(xml_file)
+    
+    # 可以进一步处理数据...
+    if data:
+        print(f"\n总共处理了 {len(data)} 条记录")
