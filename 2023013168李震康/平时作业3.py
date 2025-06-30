@@ -4,16 +4,6 @@ from typing import List, Dict, Any, Iterator, Optional, Callable, Union, Tuple, 
 
 
 def statistics_decorator(operations: List[str], fields: List[str] = None) -> Callable:
-    """
-    统计操作修饰器，用于对随机样本生成函数的结果进行统计
-
-    参数:
-    operations: 要执行的统计操作列表，支持 'SUM', 'AVG', 'MAX', 'MIN'
-    fields: 要统计的字段列表，默认为None表示统计所有数值字段
-
-    返回:
-    修饰后的函数
-    """
 
     def decorator(func: Callable) -> Callable:
         def wrapper(*args, **kwargs) -> Iterator[Dict[str, Any]]:

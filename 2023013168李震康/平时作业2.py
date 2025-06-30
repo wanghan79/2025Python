@@ -8,21 +8,6 @@ def random_sample_generator(
         sample_structure: Dict[str, Dict[str, Any]],
         seed: Optional[int] = None
 ) -> Iterator[Dict[str, Any]]:
-    """
-    生成随机样本的生成器函数
-
-    参数:
-    num_samples: 要生成的样本数量
-    sample_structure: 样本结构定义，格式为:
-        {字段名: {类型: 类型名, 参数: 参数值}}
-        支持的类型: 'int', 'float', 'str', 'bool', 'choice', 'list'
-    seed: 随机数生成器的种子，用于复现结果
-
-    返回:
-    生成器，每次生成一个随机样本
-    """
-    if seed is not None:
-        random.seed(seed)
 
     # 支持的类型及其生成函数
     type_generators = {
