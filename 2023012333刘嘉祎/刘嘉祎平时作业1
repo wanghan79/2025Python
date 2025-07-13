@@ -1,0 +1,125 @@
+import numpy as np
+
+def banker_algorithm(Max, Need, Available, Allocated, Request, process_id):
+    """
+    银行家算法实现
+    
+    参数:
+        Max (np.array): 最大需求矩阵 (n_processes × n_resources)
+        Need (np.array): 需求矩阵 (n_processes × n_resources)
+        Available (np.array): 可用资源向量 (1 × n_resources)
+        Allocated (np.array): 已分配矩阵 (n_processes × n_resources)
+        Request (np.array): 进程请求资源向量 (1 × n_resources)
+        process_id (int): 发起请求的进程ID
+        
+    返回:
+        bool: 是否分配成功
+        str: 分配结果信息
+        np.array: 新的Max矩阵
+        np.array: 新的Need矩阵
+        np.array: 新的Available矩阵
+        np.array: 新的Allocated矩阵
+    """
+    n_processes, n_resources = Max.shape
+    
+    # 1. 检查请求是否小于等于Need
+    if not all(Request <= Need[process_id]):
+        return False, "Error: Request exceeds Need.", Max, Need, Available, Allocated
+    
+    # 2. 检查请求是否小于等于Available
+    if not all(Request <= Available):
+        return False, "Error: Request exceeds Available resources.", Max, Need, Available, Allocated
+    
+    # 3. 尝试分配资源（临时修改矩阵）
+    temp_Available = Available - Request
+    temp_Allocated = Allocated.copy()
+    temp_Allocated[process_id] += Request
+    temp_Need = Need.copy()
+    temp_Need[process_id] -= Request
+    
+    # 4. 检查安全性
+    if is_safe(temp_Available, temp_Allocated, temp_Need):
+        # 分配成功，更新全局状态
+        Available = temp_Available
+        Allocated = temp_Allocated
+        Need = temp_Need
+        return True, "Request granted. System is safe.", Max, Need, Available, Allocated
+其他:
+返回错误，“请求被拒绝。系统将不安全。”，最大值，需求，可用值，分配值
+
+安全（可用，已分配，需要）：
+    """
+    安全性检查算法
+    
+    参数:
+可用（数组）：可用资源向量
+分配（数组）：已分配矩阵
+需求（数组）：需求矩阵
+        
+    返回:
+布尔（Bool）:系统是否安全
+    """
+n_进程，n_资源 = 需求形状
+work = Available.copy（）
+finish = np.zeros（n_processes，dtype=bool）
+安全序列 []
+    
+同时为真:
+found = False
+对于范围（n个进程）中的i:
+如果未完成[i]和所有（需要[i] <= 工作）:
+                # 进程i可以执行
+工作 += 已分配[i]
+完成[i] = 真
+安全序列.附件（一）
+找到 = 真
+打破
+        
+如果没有找到:
+打破
+    
+如果全部完成:
+打印（“安全序列:”，安全序列）
+返回真值
+其他:
+返回错误
+
+# 示例测试
+如果__名__=="__主"：
+    # 示例数据（3个进程，4种资源）
+Max = np.array（[
+        [7, 5, 3, 2],
+        [3, 2, 2, 2],
+        [9, 0, 2, 2]
+    ])
+    
+Allocated = np.array（[
+        [0, 1, 0, 0],
+        [2, 0, 0, 1],
+        [3, 0, 2, 1]
+    ])
+    
+需求=马克斯-分配
+Available = np.array（[3， 3， 2， 2]）
+    
+打印（"初始状态:"）
+打印（"Max:\n"， 最大值）
+打印（“已分配:\n“，已分配）
+打印（"需要:\n“， 需求）
+打印（“可用:”，可用）
+    
+    # 进程1请求资源 [1, 0, 2, 1]
+Request = np.array（[1， 0， 2， 1，]）
+进程ID=1
+    
+成功，消息，新最大值，新需求，新可用值，新分配值 = 银行算法（
+最大值，需求，可用值，分配值，请求，进程ID
+    )
+    
+打印（"\nResult:")
+打印（消息）
+如果成功:
+打印（"新马克斯：\n", new_Max)
+print（"新分配:\n"，新分配的）
+打印（“新需求:\n“， 新需求）
+打印("新可用:"， new_Available)
